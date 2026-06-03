@@ -32,7 +32,7 @@ if os.path.exists(_LOGO_PATH):
     st.sidebar.image(_LOGO_PATH, use_container_width=True)
 else:
     st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3063/3063822.png", width=100)
-st.sidebar.title("Módulos MES")
+st.sidebar.markdown("### PPCP\nPlanejamento, Programação\ne Controle da Produção")
 st.sidebar.markdown("---")
 
 menu = st.sidebar.radio(
