@@ -99,12 +99,39 @@ def _encerrar_tunel():
         pass
 
 
+def _esta_na_nuvem() -> bool:
+    """Detecta se está rodando no Streamlit Cloud (Linux sem Wi-Fi local)."""
+    try:
+        import streamlit as st
+        token = st.secrets.get("github", {}).get("token", "")
+        return bool(token and token.strip())
+    except Exception:
+        return False
+
+
 def painel_acesso_mobile(porta: int = 3001):
     """
     Exibe no sidebar o QR Code e links para acesso pelo celular.
+    Na nuvem: mostra só a URL do próprio app.
+    Local: mostra IP da rede + opção de link público.
     """
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 📱 Acesso pelo Celular")
+
+    # Na nuvem: mostra a própria URL pública do Streamlit Cloud
+    if _esta_na_nuvem():
+        try:
+            url_nuvem = st.context.url if hasattr(st, 'context') else "Verifique a URL do seu navegador"
+        except Exception:
+            url_nuvem = "Acesse pela URL do seu navegador"
+        st.sidebar.success("🌐 App rodando na nuvem!")
+        st.sidebar.markdown("Acesse de qualquer lugar com a URL do navegador.")
+        try:
+            qr_bytes = _gerar_qr(url_nuvem if url_nuvem.startswith("http") else "https://nsa-erp-pneutec.streamlit.app")
+            st.sidebar.image(qr_bytes, caption="QR Code do app", use_container_width=True)
+        except Exception:
+            pass
+        return
 
     ip_local = _get_ip_local()
     url_local = f"http://{ip_local}:{porta}"
