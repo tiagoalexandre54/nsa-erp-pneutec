@@ -127,10 +127,11 @@ def painel_acesso_mobile(porta: int = 3001):
         st.sidebar.success("🌐 App rodando na nuvem!")
         st.sidebar.markdown("Acesse de qualquer lugar com a URL do navegador.")
         try:
-            qr_bytes = _gerar_qr(url_nuvem if url_nuvem.startswith("http") else "https://nsa-erp-pneutec.streamlit.app")
+            qr_bytes = _gerar_qr("https://nsa-erp-pneutec-jwmesdmiv9peeipz56njt7.streamlit.app/")
             st.sidebar.image(qr_bytes, caption="QR Code do app", use_container_width=True)
         except Exception:
             pass
+        st.sidebar.code("https://nsa-erp-pneutec-jwmesdmiv9peeipz56njt7.streamlit.app/", language=None)
         return
 
     ip_local = _get_ip_local()
