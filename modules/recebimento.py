@@ -552,7 +552,7 @@ def _html_todos_pallets(df: pd.DataFrame, resumo: dict) -> str:
     """HTML com a lista detalhada de todos os pallets ocupados."""
     pallets_ord = sorted(
         resumo.keys(),
-        key=lambda x: (x[0], int(x[1:]) if x[1:].isdigit() else 99)
+        key=lambda x: (x[0] if x else '', int(x[1:]) if len(x) > 1 and x[1:].isdigit() else 99)
     )
 
     blocos = ""
@@ -782,7 +782,7 @@ def tela_recebimento():
 
     pallets_com_pneus = sorted(
         resumo.keys(),
-        key=lambda x: (x[0], int(x[1:]) if x[1:].isdigit() else 99)
+        key=lambda x: (x[0] if x else '', int(x[1:]) if len(x) > 1 and x[1:].isdigit() else 99)
     )
 
     if not pallets_com_pneus:
