@@ -1,6 +1,7 @@
 # Dados locais — não vão para o GitHub
 data/ordens.csv
 data/*.tmp
+!data/.gitkeep
 
 # Secrets locais
 .streamlit/secrets.toml

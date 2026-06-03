@@ -144,7 +144,8 @@ def _garantir_coluna():
 
 
 def _salvar():
-    st.session_state.bd_pneus.to_csv(CAMINHO_CSV, index=False)
+    from modules.database import salvar_dados
+    salvar_dados(st.session_state.bd_pneus)
 
 
 def _bipe_recebimento(resumo: dict):
