@@ -78,11 +78,21 @@ _LINHA_FIM = 40
 
 # ── Leitura do Excel / CSV de Programação ────────────────────────────────────
 def _ler_planilha(arquivo) -> dict:
-    try:
-        df = pd.read_csv(arquivo, header=None, dtype=str, keep_default_na=False)
-    except Exception:
+    nome = getattr(arquivo, 'name', '') or ''
+    if nome.lower().endswith(('.xlsx', '.xls')):
         df = pd.read_excel(arquivo, sheet_name=0, header=None, dtype=str)
         df = df.fillna('')
+    else:
+        try:
+            df = pd.read_csv(arquivo, header=None, dtype=str, keep_default_na=False)
+        except Exception:
+            # Reseta ponteiro antes de tentar como Excel
+            try:
+                arquivo.seek(0)
+            except Exception:
+                pass
+            df = pd.read_excel(arquivo, sheet_name=0, header=None, dtype=str)
+            df = df.fillna('')
 
     resultado = {'data': datetime.date.today().strftime('%d/%m/%Y'), 'linhas': {}}
 
@@ -99,15 +109,21 @@ def _ler_planilha(arquivo) -> dict:
                     continue
 
                 idpedido = str(df.iloc[row_idx, cfg['col_id']]).strip()
-                if idpedido in ('nan', '0'):
+                if idpedido in ('nan', '0', ''):
                     idpedido = ''
-                if idpedido.replace('.', '').isdigit():
+                elif idpedido.replace('.', '').isdigit():
                     idpedido = idpedido.split('.')[0]
+
+                # Normaliza QTD: "4.0" → "4", "nan" → "0"
+                try:
+                    qtd_norm = str(int(float(qtd))) if qtd and qtd not in ('nan', '') else '0'
+                except Exception:
+                    qtd_norm = '0'
 
                 itens.append({
                     'idpedido': idpedido,
                     'cliente':  cliente,
-                    'qtd':      qtd if qtd.isdigit() else '0',
+                    'qtd':      qtd_norm,
                 })
             except Exception:
                 continue
@@ -281,11 +297,32 @@ def _aba_bipe(df: pd.DataFrame):
 def _aba_importar(df_banco: pd.DataFrame):
     st.subheader("Carregar Programação Diária")
 
-    arquivo = st.file_uploader(
+    col_up, col_btn = st.columns([3, 1])
+    arquivo = col_up.file_uploader(
         "📂 Selecione sua planilha PLANEJAMENTO_DIARIO:",
         type=["xlsx", "xls", "csv"],
         key="uploader_planejamento",
     )
+    if col_btn.button("🗑️ Limpar programação salva", help="Remove o plano salvo e volta à tela de upload"):
+        try:
+            _PLANO_JSON.unlink(missing_ok=True)
+        except Exception:
+            pass
+        try:
+            from modules.database import _modo_github, _github_cfg
+            if _modo_github():
+                import requests, base64
+                token, repo, branch, _ = _github_cfg()
+                url = f"https://api.github.com/repos/{repo}/contents/data/plano_diario.json"
+                headers = {"Authorization": f"token {token}"}
+                r = requests.get(url, headers=headers, timeout=5)
+                if r.status_code == 200:
+                    sha = r.json().get("sha")
+                    requests.delete(url, json={"message": "Remove plano diario", "sha": sha, "branch": branch}, headers=headers, timeout=10)
+        except Exception:
+            pass
+        st.success("Programação apagada.")
+        st.rerun()
 
     plano = None
 
