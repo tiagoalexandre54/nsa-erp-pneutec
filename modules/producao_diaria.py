@@ -354,9 +354,7 @@ def _aba_bipe(df_banco: pd.DataFrame):
 
     # Feedback pós-bipe
     if st.session_state.get('msg_prod_bipe'):
-        msg = st.session_state.msg_prod_bipe
-        if msg['tipo'] == 'sucesso':
-            st.success(msg['texto'])
+        st.success(st.session_state.msg_prod_bipe)
         st.session_state.msg_prod_bipe = None
 
     st.markdown("---")
