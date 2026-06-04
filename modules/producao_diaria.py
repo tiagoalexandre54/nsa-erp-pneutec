@@ -16,9 +16,9 @@ _PLANO_JSON = _BASE_DIR / "data" / "plano_diario.json"
 # Linha C: Colunas 17, 18, 20 (R, S, U no Excel) | Cap: 89 + 10% = 98
 
 _CFG_LINHAS = {
-    'A': {'col_id': 1,  'col_cliente': 2,  'col_qtd': 4,  'cor': '#1a5276', 'emoji': '🔵', 'cap_max': 165},
-    'B': {'col_id': 9,  'col_cliente': 10, 'col_qtd': 12, 'cor': '#1e8449', 'emoji': '🟢', 'cap_max': 170},
-    'C': {'col_id': 17, 'col_cliente': 18, 'col_qtd': 20, 'cor': '#784212', 'emoji': '🟠', 'cap_max': 98},
+    'A': {'col_id': 5,  'col_cliente': 2,  'col_qtd': 3,  'cor': '#1a5276', 'emoji': '🔵', 'cap_max': 165},
+    'B': {'col_id': 10, 'col_cliente': 7,  'col_qtd': 8,  'cor': '#1e8449', 'emoji': '🟢', 'cap_max': 170},
+    'C': {'col_id': 16, 'col_cliente': 12, 'col_qtd': 13, 'cor': '#784212', 'emoji': '🟠', 'cap_max': 98},
 }
 
 _LINHA_INI = 7   # dados começam na linha 8 do Excel (índice 7 no Pandas)
