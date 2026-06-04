@@ -7,6 +7,7 @@ Suporta dois modos:
 Com banco único: qualquer bipe feito no escritório aparece na nuvem
 e vice-versa, pois ambos usam o mesmo ordens.csv do GitHub.
 """
+import json
 import pandas as pd
 import os
 from pathlib import Path
@@ -251,6 +252,67 @@ def salvar_dados(df: pd.DataFrame) -> None:
             _salvar_csv_github(df)
         except Exception:
             pass  # sem internet → dado já está no backup local
+
+
+# ── Trava Global de IDPEDIDO (Poka-Yoke) ────────────────────────────────────
+_TRAVA_JSON = _BASE_DIR / "data" / "trava_global.json"
+
+
+def ler_trava_global() -> str | None:
+    """
+    Retorna o IDPEDIDO atualmente travado, ou None se não houver trava.
+    Lê do GitHub em nuvem; arquivo local como fallback offline.
+    """
+    if _modo_github():
+        try:
+            import requests, base64
+            token, repo, branch, _ = _github_cfg()
+            url = f"https://api.github.com/repos/{repo}/contents/data/trava_global.json?ref={branch}"
+            r = requests.get(url, headers={"Authorization": f"token {token}"}, timeout=5)
+            if r.status_code == 200:
+                conteudo = base64.b64decode(r.json()["content"]).decode("utf-8")
+                return json.loads(conteudo).get("id_travado")
+        except Exception:
+            pass
+    if _TRAVA_JSON.exists():
+        try:
+            return json.loads(_TRAVA_JSON.read_text(encoding="utf-8")).get("id_travado")
+        except Exception:
+            pass
+    return None
+
+
+def set_trava_global(id_pedido: str | None) -> None:
+    """
+    Define (ou limpa) a trava global de IDPEDIDO.
+    Persiste no GitHub em nuvem e localmente como backup.
+    """
+    payload = {"id_travado": id_pedido}
+    conteudo_str = json.dumps(payload, ensure_ascii=False)
+
+    # Salva local
+    try:
+        _TRAVA_JSON.parent.mkdir(parents=True, exist_ok=True)
+        _TRAVA_JSON.write_text(conteudo_str, encoding="utf-8")
+    except Exception:
+        pass
+
+    # Sincroniza GitHub
+    if _modo_github():
+        try:
+            import requests, base64
+            token, repo, branch, _ = _github_cfg()
+            url = f"https://api.github.com/repos/{repo}/contents/data/trava_global.json"
+            headers = {"Authorization": f"token {token}"}
+            conteudo_b64 = base64.b64encode(conteudo_str.encode("utf-8")).decode()
+            r = requests.get(url, headers=headers, timeout=5)
+            sha = r.json().get("sha") if r.status_code == 200 else None
+            payload_gh = {"message": "Atualiza trava global", "content": conteudo_b64, "branch": branch}
+            if sha:
+                payload_gh["sha"] = sha
+            requests.put(url, json=payload_gh, headers=headers, timeout=10)
+        except Exception:
+            pass
 
 
 def excluir_os(nrordem: str) -> tuple[bool, str]:
