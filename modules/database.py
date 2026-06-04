@@ -1,8 +1,11 @@
 """
 Camada de dados — leitura, gravação e importação de CSV externos.
 Suporta dois modos:
-  - LOCAL:  lê/salva em data/ordens.csv (uso no escritório)
-  - NUVEM:  lê/salva via GitHub API (uso no Streamlit Cloud)
+  - LOCAL:  lê/salva em data/ordens.csv E sincroniza com GitHub (banco único)
+  - NUVEM:  lê/salva via GitHub API (Streamlit Cloud)
+
+Com banco único: qualquer bipe feito no escritório aparece na nuvem
+e vice-versa, pois ambos usam o mesmo ordens.csv do GitHub.
 """
 import pandas as pd
 import os
@@ -13,20 +16,43 @@ _BASE_DIR = Path(__file__).resolve().parent.parent
 CAMINHO_CSV = _BASE_DIR / "data" / "ordens.csv"
 
 
-def _modo_nuvem() -> bool:
-    """Retorna True se estiver rodando no Streamlit Cloud com token configurado."""
+def _token_github() -> str:
+    """Retorna o token do GitHub seja de secrets (nuvem) ou do arquivo local."""
+    # 1. Tenta st.secrets (Streamlit Cloud ou secrets.toml local)
     try:
         import streamlit as st
         token = st.secrets.get("github", {}).get("token", "")
-        return bool(token and token.strip())
+        if token and token.strip():
+            return token.strip()
     except Exception:
-        return False
+        pass
+    # 2. Tenta variável de ambiente
+    return os.environ.get("GITHUB_TOKEN", "")
+
+
+def _modo_github() -> bool:
+    """Retorna True se tiver token GitHub configurado — usa nuvem como banco."""
+    return bool(_token_github())
+
+
+def _modo_nuvem() -> bool:
+    """Compatibilidade — mesmo que _modo_github."""
+    return _modo_github()
 
 
 def _github_cfg():
-    import streamlit as st
-    cfg = st.secrets["github"]
-    return cfg["token"], cfg["repo"], cfg.get("branch", "main"), cfg.get("csv_path", "data/ordens.csv")
+    token = _token_github()
+    try:
+        import streamlit as st
+        cfg = st.secrets.get("github", {})
+        repo     = cfg.get("repo",     "tiagoalexandre54/nsa-erp-pneutec")
+        branch   = cfg.get("branch",   "main")
+        csv_path = cfg.get("csv_path", "data/ordens.csv")
+    except Exception:
+        repo     = "tiagoalexandre54/nsa-erp-pneutec"
+        branch   = "main"
+        csv_path = "data/ordens.csv"
+    return token, repo, branch, csv_path
 
 
 def _ler_csv_github() -> pd.DataFrame:
@@ -179,16 +205,19 @@ _MAPEAMENTO_COLUNAS = {
 
 def carregar_dados() -> pd.DataFrame:
     """
-    Carrega dados do CSV — local ou GitHub conforme o ambiente.
+    Carrega dados do GitHub (banco único) quando token disponível.
+    Fallback: CSV local — para uso offline sem internet.
     """
     df = None
 
-    if _modo_nuvem():
+    if _modo_github():
         try:
             df = _ler_csv_github()
         except Exception:
-            df = None
-    elif CAMINHO_CSV.exists():
+            df = None   # sem internet → cai para CSV local
+
+    # Fallback: CSV local
+    if df is None and CAMINHO_CSV.exists():
         df = pd.read_csv(CAMINHO_CSV, dtype=str, keep_default_na=False)
 
     if df is None:
@@ -202,14 +231,25 @@ def carregar_dados() -> pd.DataFrame:
 
 
 def salvar_dados(df: pd.DataFrame) -> None:
-    """Persiste o DataFrame — local ou GitHub conforme o ambiente."""
-    if _modo_nuvem():
-        _salvar_csv_github(df)
-    else:
+    """
+    Salva no GitHub (banco único) quando token disponível.
+    Também salva CSV local como backup offline.
+    """
+    # Sempre salva backup local
+    try:
         CAMINHO_CSV.parent.mkdir(parents=True, exist_ok=True)
         tmp = CAMINHO_CSV.with_suffix('.tmp')
         df.to_csv(tmp, index=False)
         tmp.replace(CAMINHO_CSV)
+    except Exception:
+        pass
+
+    # Sincroniza com GitHub (banco principal)
+    if _modo_github():
+        try:
+            _salvar_csv_github(df)
+        except Exception:
+            pass  # sem internet → dado já está no backup local
 
 
 def excluir_os(nrordem: str) -> tuple[bool, str]:
