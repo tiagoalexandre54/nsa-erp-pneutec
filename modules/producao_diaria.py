@@ -413,10 +413,72 @@ def _aba_bipe(df_banco: pd.DataFrame):
             )
 
             if not pendentes.empty:
-                c1, c2 = st.columns(2)
-                if c1.button(
-                    f"▶️ Confirmar todos ({len(pendentes)}) na linha",
-                    key=f"lancar_{codigo}", type="primary"
+                st.markdown("---")
+
+                # ── Campo de bipe inline por pneu ────────────────────────────
+                st.markdown("**📷 Bipe cada NRORDEM para dar baixa individual:**")
+
+                if 'bipe_inline_key' not in st.session_state:
+                    st.session_state.bipe_inline_key = 0
+
+                bipe_inline = st.text_input(
+                    f"Bipe NRORDEM do IDPEDIDO {codigo}:",
+                    key=f"bipe_inline_{codigo}_{st.session_state.bipe_inline_key}",
+                    placeholder="Aguardando leitura do código de barras..."
+                )
+
+                if bipe_inline:
+                    bipe_inline = bipe_inline.strip()
+                    idx_bipe = df.index[df['NRORDEM'] == bipe_inline].tolist()
+
+                    if idx_bipe:
+                        ib = idx_bipe[0]
+                        id_do_bipe = str(df.at[ib, 'IDPEDIDOPNEU']).strip()
+
+                        if id_do_bipe != codigo:
+                            st.error(
+                                f"🛑 OS **{bipe_inline}** pertence ao IDPEDIDO **{id_do_bipe}**, "
+                                f"não ao **{codigo}**! Verifique o pneu."
+                            )
+                        elif str(df.at[ib, 'STATUS']).strip() == 'Expedido':
+                            st.error(f"🛑 OS **{bipe_inline}** já foi expedida.")
+                        else:
+                            agora_inline = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                            st.session_state.bd_pneus.at[ib, 'STATUS']       = 'Em Produção'
+                            st.session_state.bd_pneus.at[ib, 'DATA_ENTRADA'] = agora_inline
+                            salvar_dados(st.session_state.bd_pneus)
+
+                            # Atualiza contadores
+                            df_up    = st.session_state.bd_pneus
+                            faltam   = df_up[(df_up['IDPEDIDOPNEU'] == codigo) &
+                                             (df_up['STATUS'].isin(['Aguardando']))]
+                            na_l     = len(df_up[(df_up['IDPEDIDOPNEU'] == codigo) &
+                                                  (df_up['STATUS'] == 'Em Produção')])
+
+                            if len(faltam) == 0:
+                                st.session_state.id_travado = None
+                                st.session_state.msg_prod_bipe = (
+                                    f"🎉 **COMPLETO!** Último pneu do IDPEDIDO **{codigo}** "
+                                    f"({df.at[ib,'CLIENTE']}) confirmado na linha! Trava liberada."
+                                )
+                            else:
+                                st.session_state.msg_prod_bipe = (
+                                    f"✅ OS **{bipe_inline}** | {df.at[ib,'DESENHO']} | "
+                                    f"Série {df.at[ib,'NRSERIE']} → **Na Linha!** | "
+                                    f"Faltam **{len(faltam)}** pneus"
+                                )
+
+                            st.session_state.bipe_inline_key += 1
+                            st.session_state.prod_bipe_key   += 1
+                            st.rerun()
+                    else:
+                        st.error(f"❌ NRORDEM **{bipe_inline}** não encontrado.")
+
+                st.markdown("")
+                # Botão para lançar todos de uma vez
+                if st.button(
+                    f"▶️ Confirmar todos ({len(pendentes)}) na linha de uma vez",
+                    key=f"lancar_{codigo}", type="secondary"
                 ):
                     st.session_state.bd_pneus.loc[pendentes.index, 'STATUS']       = 'Em Produção'
                     st.session_state.bd_pneus.loc[pendentes.index, 'DATA_ENTRADA'] = agora
@@ -428,7 +490,6 @@ def _aba_bipe(df_banco: pd.DataFrame):
                     )
                     st.session_state.prod_bipe_key += 1
                     st.rerun()
-                c2.info("Ou bipe cada NRORDEM um por um.")
             else:
                 st.session_state.id_travado = None
                 st.success("✅ Todos os pneus desta coleta já estão na linha!")
