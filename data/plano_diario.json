@@ -1,0 +1,553 @@
+{
+  "data": "04/06/2026",
+  "linhas": {
+    "A": [
+      {
+        "idpedido": "366793",
+        "cliente": "366793",
+        "qtd": "VIAÇÃO SANTA BRIGIDA",
+        "idpedidos_encontrados": [
+          "366793"
+        ],
+        "nrordens": [
+          "1650823",
+          "1650824",
+          "1650825",
+          "1650826",
+          "1650827",
+          "1650828",
+          "1650829",
+          "1650830",
+          "1650831",
+          "1650832",
+          "1650833",
+          "1650834",
+          "1650835"
+        ]
+      }
+    ],
+    "B": [
+      {
+        "idpedido": "9",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "4",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "10",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "14",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "15",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "3",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "7",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "4",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "2",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "18",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "5",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "10",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "20",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "11",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "11",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "7",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "",
+        "cliente": "—",
+        "qtd": "🔄 EM PROD.",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      }
+    ],
+    "C": [
+      {
+        "idpedido": "1",
+        "cliente": "GAB",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "366598",
+          "366850",
+          "366851"
+        ],
+        "nrordens": [
+          "1650281",
+          "1650282",
+          "1650283",
+          "1650284",
+          "1650285",
+          "1650286",
+          "1650287",
+          "1650288",
+          "1650289",
+          "1650290",
+          "1650291",
+          "1650292",
+          "1650293",
+          "1650294",
+          "1650295",
+          "1650296",
+          "1650297",
+          "1650911",
+          "1650912",
+          "1650913",
+          "1650914",
+          "1650915",
+          "1650916",
+          "1650917",
+          "1650918",
+          "1650919",
+          "1650920"
+        ]
+      },
+      {
+        "idpedido": "2",
+        "cliente": "TECMAR",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "366565",
+          "366824"
+        ],
+        "nrordens": [
+          "1650271",
+          "1650272",
+          "1650274",
+          "1650275",
+          "1650276",
+          "1650277",
+          "1650278",
+          "1650279",
+          "1650280",
+          "1650906",
+          "1650907",
+          "1650908",
+          "1650909",
+          "1650910"
+        ]
+      },
+      {
+        "idpedido": "3",
+        "cliente": "JTP",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "366211",
+          "366679",
+          "366680",
+          "366681"
+        ],
+        "nrordens": [
+          "1648140",
+          "1648141",
+          "1650403",
+          "1650404",
+          "1650405",
+          "1650406",
+          "1650407",
+          "1650408",
+          "1650409",
+          "1650410",
+          "1650411",
+          "1650412",
+          "1650413",
+          "1650414",
+          "1650415",
+          "1650416",
+          "1650417",
+          "1650418",
+          "1650419",
+          "1650420",
+          "1650421",
+          "1650422",
+          "1650423",
+          "1650424"
+        ]
+      },
+      {
+        "idpedido": "4",
+        "cliente": "TRUCKTYRES",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "366820"
+        ],
+        "nrordens": [
+          "1650857",
+          "1650858",
+          "1650859",
+          "1650860"
+        ]
+      },
+      {
+        "idpedido": "5",
+        "cliente": "BIO PETROLEO",
+        "qtd": "—",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "6",
+        "cliente": "LUFT",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "366815"
+        ],
+        "nrordens": [
+          "1650768",
+          "1650769",
+          "1650770"
+        ]
+      },
+      {
+        "idpedido": "7",
+        "cliente": "YES BRASIL",
+        "qtd": "—",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "8",
+        "cliente": "OPERLOG",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "366799"
+        ],
+        "nrordens": [
+          "1650852",
+          "1650853",
+          "1650854",
+          "1650855",
+          "1650856"
+        ]
+      },
+      {
+        "idpedido": "9",
+        "cliente": "TOME",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "366728"
+        ],
+        "nrordens": [
+          "1650723",
+          "1650724",
+          "1650725",
+          "1650726",
+          "1650727",
+          "1650728"
+        ]
+      },
+      {
+        "idpedido": "10",
+        "cliente": "INTEC",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "366507",
+          "366508",
+          "366717"
+        ],
+        "nrordens": [
+          "1649529",
+          "1649530",
+          "1649534",
+          "1649535",
+          "1650761",
+          "1650762",
+          "1650763",
+          "1650764",
+          "1650765",
+          "1650766"
+        ]
+      },
+      {
+        "idpedido": "11",
+        "cliente": "ILR",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "366678"
+        ],
+        "nrordens": [
+          "1650330",
+          "1650331",
+          "1650332"
+        ]
+      },
+      {
+        "idpedido": "12",
+        "cliente": "BLR",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "365214",
+          "366647",
+          "366648"
+        ],
+        "nrordens": [
+          "1644499",
+          "1650093",
+          "1650094",
+          "1650095",
+          "1650096",
+          "1650097",
+          "1650098",
+          "1650099",
+          "1650100",
+          "1650101",
+          "1650111",
+          "1650106",
+          "1650102",
+          "1650103",
+          "1650104",
+          "1650105",
+          "1650107",
+          "1650108",
+          "1650109",
+          "1650110",
+          "1650112"
+        ]
+      },
+      {
+        "idpedido": "13",
+        "cliente": "FASSINA",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "366719"
+        ],
+        "nrordens": [
+          "1650891",
+          "1650892",
+          "1650893",
+          "1650894",
+          "1650895",
+          "1650896",
+          "1650897",
+          "1650898",
+          "1650899",
+          "1650900",
+          "1650901",
+          "1650902",
+          "1650903",
+          "1650904"
+        ]
+      },
+      {
+        "idpedido": "14",
+        "cliente": "RICARDO FURNIEL",
+        "qtd": "—",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "15",
+        "cliente": "AE CARVALHO",
+        "qtd": "—",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "16",
+        "cliente": "O P R",
+        "qtd": "—",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "17",
+        "cliente": "TRANSDUTRA",
+        "qtd": "—",
+        "idpedidos_encontrados": [],
+        "nrordens": []
+      },
+      {
+        "idpedido": "18",
+        "cliente": "BRASPRESS",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "365850",
+          "366537",
+          "366558",
+          "366559",
+          "366683"
+        ],
+        "nrordens": [
+          "1645953",
+          "1649726",
+          "1649727",
+          "1650372",
+          "1650373",
+          "1650374",
+          "1650375",
+          "1650377",
+          "1650378",
+          "1650379",
+          "1650380",
+          "1650381",
+          "1650382",
+          "1650376",
+          "1650383",
+          "1650388",
+          "1650389",
+          "1650390",
+          "1650384",
+          "1650386",
+          "1650385"
+        ]
+      },
+      {
+        "idpedido": "19",
+        "cliente": ",",
+        "qtd": "—",
+        "idpedidos_encontrados": [
+          "364949",
+          "364950",
+          "364951",
+          "364952",
+          "366679",
+          "366680",
+          "366681"
+        ],
+        "nrordens": [
+          "1641302",
+          "1641303",
+          "1641307",
+          "1641308",
+          "1641311",
+          "1641313",
+          "1641314",
+          "1641315",
+          "1641309",
+          "1641310",
+          "1641312",
+          "1641316",
+          "1641317",
+          "1641318",
+          "1641319",
+          "1641320",
+          "1641321",
+          "1641322",
+          "1641323",
+          "1641324",
+          "1650403",
+          "1650404",
+          "1650405",
+          "1650406",
+          "1650407",
+          "1650408",
+          "1650409",
+          "1650410",
+          "1650411",
+          "1650412",
+          "1650413",
+          "1650414",
+          "1650415",
+          "1650416",
+          "1650417",
+          "1650418",
+          "1650419",
+          "1650420",
+          "1650421",
+          "1650422",
+          "1650423",
+          "1650424"
+        ]
+      }
+    ]
+  }
+}
