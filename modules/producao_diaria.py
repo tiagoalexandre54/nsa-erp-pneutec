@@ -133,7 +133,7 @@ def _ler_planilha(arquivo) -> dict:
 
 def _buscar_os(idpedido: str, cliente: str, df_banco: pd.DataFrame) -> pd.DataFrame:
     """Busca os pneus do cliente, priorizando o IDPEDIDO se existir.
-    Fallback: busca parcial (o nome da planilha pode ser abreviado)."""
+    Fallback: banco contém o nome abreviado da planilha (mínimo 4 chars)."""
     if idpedido:
         res = df_banco[df_banco['IDPEDIDOPNEU'] == idpedido]
         if not res.empty:
@@ -145,15 +145,11 @@ def _buscar_os(idpedido: str, cliente: str, df_banco: pd.DataFrame) -> pd.DataFr
         res = df_banco[nomes == cliente_up]
         if not res.empty:
             return res
-        # 2. Match parcial: banco contém o nome da planilha
-        res = df_banco[nomes.str.contains(cliente_up, regex=False, na=False)]
-        if not res.empty:
-            return res
-        # 3. Match parcial invertido: nome da planilha contém a 1ª palavra do banco
-        primeira_palavra = nomes.str.split().str[0]
-        res = df_banco[primeira_palavra == cliente_up.split()[0]]
-        if not res.empty:
-            return res
+        # 2. Banco contém o nome da planilha — só se tiver ≥4 chars (evita matches amplos)
+        if len(cliente_up) >= 4:
+            res = df_banco[nomes.str.contains(cliente_up, regex=False, na=False)]
+            if not res.empty:
+                return res
     return pd.DataFrame()
 
 
