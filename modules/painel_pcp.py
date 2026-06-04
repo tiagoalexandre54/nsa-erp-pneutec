@@ -50,6 +50,16 @@ def tela_painel_pcp():
     # ── Importação de CSV ────────────────────────────────────────────────────
     with st.expander("📂 Importar CSV (rel 1 / rel 2)", expanded=False):
         st.caption("Colunas de data aceitas: DATA_ENTRADA, DT_COLETA, DATA_EMISSAO, DATA_SAIDA, DATA_ENTREGA, DT_PREVISTA...")
+
+        modo_import = st.radio(
+            "Modo de importação:",
+            [
+                "➕ Adicionar novas OS (mantém banco atual)",
+                "🔄 Substituir banco completo (protege Em Produção e Expedidos)",
+            ],
+            key="modo_importacao",
+        )
+
         arquivo = st.file_uploader("Selecione o arquivo CSV:", type=["csv"], key="uploader_csv")
         arquivo_id = arquivo.file_id if arquivo else None
 
@@ -65,27 +75,72 @@ def tela_painel_pcp():
 
                 # Mostra prévia antes de confirmar
                 st.write("**Prévia do arquivo:**")
-                st.dataframe(df_novo, use_container_width=True)
+                st.dataframe(df_novo.head(20), use_container_width=True)
 
-                novos      = df_novo[~df_novo['NRORDEM'].isin(df['NRORDEM'])].copy()
-                duplicados = len(df_novo) - len(novos)
+                if modo_import.startswith("➕"):
+                    # ── Modo ADICIONAR: só insere OS novas ──────────────────
+                    novos      = df_novo[~df_novo['NRORDEM'].isin(df['NRORDEM'])].copy()
+                    duplicados = len(df_novo) - len(novos)
 
-                c1, c2 = st.columns(2)
-                c1.metric("Novas OS", len(novos))
-                c2.metric("Já existentes (ignoradas)", duplicados)
+                    c1, c2 = st.columns(2)
+                    c1.metric("Novas OS", len(novos))
+                    c2.metric("Já existentes (ignoradas)", duplicados)
 
-                if not novos.empty:
-                    if st.button(f"✅ Confirmar importação de {len(novos)} OS", key="confirmar_csv"):
-                        st.session_state.bd_pneus = pd.concat(
-                            [st.session_state.bd_pneus, novos], ignore_index=True
-                        )
+                    if not novos.empty:
+                        if st.button(f"✅ Confirmar importação de {len(novos)} OS", key="confirmar_csv"):
+                            st.session_state.bd_pneus = pd.concat(
+                                [st.session_state.bd_pneus, novos], ignore_index=True
+                            )
+                            salvar_dados(st.session_state.bd_pneus)
+                            st.session_state.ultimo_arquivo_importado = arquivo_id
+                            st.success(f"✅ {len(novos)} OS importada(s) com sucesso!")
+                            st.rerun()
+                    else:
+                        st.session_state.ultimo_arquivo_importado = arquivo_id
+                        st.info("Todas as OS deste arquivo já estão no sistema.")
+
+                else:
+                    # ── Modo SUBSTITUIR: df_novo vira o novo banco, ──────────
+                    # mas preserva STATUS/DATA de OS que já estão Em Produção
+                    # ou Expedidas (Poka-Yoke: não volta para Aguardando).
+                    df_atual = st.session_state.bd_pneus
+                    protegidos = 0
+                    for i, row in df_novo.iterrows():
+                        ordem = row['NRORDEM']
+                        os_existente = df_atual[df_atual['NRORDEM'] == ordem]
+                        if not os_existente.empty:
+                            status_banco = os_existente.iloc[0]['STATUS']
+                            if status_banco in ['Em Produção', 'Expedido']:
+                                df_novo.at[i, 'STATUS']       = status_banco
+                                df_novo.at[i, 'DATA_ENTRADA'] = os_existente.iloc[0]['DATA_ENTRADA']
+                                df_novo.at[i, 'DATA_SAIDA']   = os_existente.iloc[0]['DATA_SAIDA']
+                                df_novo.at[i, 'LOCAL_PALLET'] = os_existente.iloc[0]['LOCAL_PALLET']
+                                protegidos += 1
+
+                    novas_no_arquivo   = len(df_novo[~df_novo['NRORDEM'].isin(df_atual['NRORDEM'])])
+                    removidas_do_banco = len(df_atual[~df_atual['NRORDEM'].isin(df_novo['NRORDEM'])])
+
+                    st.warning(
+                        f"⚠️ **ATENÇÃO — Modo Substituição:**  \n"
+                        f"• **{len(df_novo)}** OS no arquivo novo  \n"
+                        f"• **{novas_no_arquivo}** OS serão adicionadas  \n"
+                        f"• **{removidas_do_banco}** OS do banco atual não estão no arquivo (serão removidas)  \n"
+                        f"• **{protegidos}** OS protegidas (Em Produção / Expedido — status preservado)"
+                    )
+
+                    if st.button(
+                        f"🔄 Confirmar SUBSTITUIÇÃO do banco ({len(df_novo)} OS)",
+                        key="confirmar_substituir",
+                        type="primary",
+                    ):
+                        st.session_state.bd_pneus = df_novo.reset_index(drop=True)
                         salvar_dados(st.session_state.bd_pneus)
                         st.session_state.ultimo_arquivo_importado = arquivo_id
-                        st.success(f"✅ {len(novos)} OS importada(s) com sucesso!")
+                        st.success(
+                            f"✅ Banco substituído! {len(df_novo)} OS carregadas. "
+                            f"{protegidos} OS tiveram status preservado."
+                        )
                         st.rerun()
-                else:
-                    st.session_state.ultimo_arquivo_importado = arquivo_id
-                    st.info("Todas as OS deste arquivo já estão no sistema.")
 
             except ValueError as e:
                 st.error(f"⚠️ Erro na estrutura do CSV:\n\n{e}")
