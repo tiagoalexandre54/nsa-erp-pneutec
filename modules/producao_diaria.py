@@ -225,69 +225,141 @@ def tela_producao_diaria():
     df_banco = st.session_state.bd_pneus
 
     # ── Abas ─────────────────────────────────────────────────────────────────
-    aba1, aba2, aba3 = st.tabs(["📷 Bipe de Entrada", "📂 Importar Planilha", "📋 Plano Salvo"])
+    aba1, aba2, aba3, aba4 = st.tabs([
+        "📷 Bipe de Entrada",
+        "🏭 Clientes em Linha",
+        "📂 Importar Planilha",
+        "📋 Plano Salvo"
+    ])
 
     with aba1:
         _aba_bipe(df_banco)
 
     with aba2:
-        _aba_importar(df_banco)
+        _aba_clientes_em_linha(df_banco)
 
     with aba3:
+        _aba_importar(df_banco)
+
+    with aba4:
         _aba_plano_salvo(df_banco)
 
 
 def _aba_bipe(df_banco: pd.DataFrame):
     """
-    Bipe de entrada na produção.
-    Aceita:
-      - NRORDEM   → dá baixa em 1 pneu
-      - IDPEDIDO  → mostra toda a coleta e permite lançar em lote
+    Bipe de entrada na produção com trava de IDPEDIDO.
+    - NRORDEM   → dá baixa em 1 pneu (se houver trava, só aceita do ID travado)
+    - IDPEDIDO  → ativa trava: todos os pneus devem entrar antes de mudar de ID
     """
     from modules.database import salvar_dados
 
     st.subheader("📷 Bipagem de Entrada na Produção")
-    st.info(
-        "**Bipe o NRORDEM** para dar baixa em 1 pneu, ou "
-        "**digite o IDPEDIDO** para ver e lançar toda a coleta de uma vez."
-    )
+
+    # ── Trava de IDPEDIDO ────────────────────────────────────────────────────
+    id_travado = st.session_state.get('id_travado', None)
+    df = st.session_state.bd_pneus
+
+    if id_travado:
+        os_trava   = df[df['IDPEDIDOPNEU'] == id_travado]
+        pendentes  = os_trava[os_trava['STATUS'].isin(['Aguardando', 'Em Produção'])]
+        total_id   = len(os_trava)
+        na_linha   = total_id - len(pendentes)
+        cliente_tr = os_trava['CLIENTE'].iloc[0] if not os_trava.empty else ''
+        perc       = int(na_linha / total_id * 100) if total_id > 0 else 0
+
+        st.markdown(
+            f"""<div style="background:#7d6608;border:2px solid #f0c800;
+                border-radius:8px;padding:12px 18px;margin-bottom:12px;">
+              <h4 style="color:#fff;margin:0 0 6px 0;">
+                🔒 TRAVA ATIVA — IDPEDIDO: {id_travado} | {cliente_tr}
+              </h4>
+              <p style="color:#ffe;margin:0;">
+                {na_linha}/{total_id} pneus na linha —
+                faltam <b>{len(pendentes)}</b> para liberar o próximo pedido
+              </p>
+            </div>""",
+            unsafe_allow_html=True
+        )
+        st.progress(perc, text=f"{na_linha}/{total_id} pneus confirmados ({perc}%)")
+
+        if len(pendentes) == 0:
+            st.success("✅ Todos os pneus deste IDPEDIDO entraram na linha! Trava liberada.")
+            if st.button("🔓 Liberar trava e iniciar próximo", type="primary", key="liberar_trava"):
+                st.session_state.id_travado = None
+                st.session_state.prod_bipe_key = st.session_state.get('prod_bipe_key', 0) + 1
+                st.rerun()
+            return
+    else:
+        st.info(
+            "**Bipe o NRORDEM** para dar baixa em 1 pneu, ou "
+            "**bipe/digite o IDPEDIDO** para ativar a trava da coleta."
+        )
 
     if 'prod_bipe_key' not in st.session_state:
         st.session_state.prod_bipe_key = 0
 
+    placeholder_txt = (
+        f"Bipe NRORDEM do IDPEDIDO {id_travado}..." if id_travado
+        else "Ex: 1610546 (NRORDEM) ou 356774 (IDPEDIDO)"
+    )
+
     codigo = st.text_input(
         "🔍 Bipe NRORDEM ou IDPEDIDO:",
         key=f"bipe_prod_{st.session_state.prod_bipe_key}",
-        placeholder="Ex: 1610546 (NRORDEM) ou 356774 (IDPEDIDO da coleta)"
+        placeholder=placeholder_txt
     )
 
     if codigo:
         codigo = codigo.strip()
-        df     = st.session_state.bd_pneus
         agora  = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-        # ── Tenta NRORDEM primeiro (busca exata) ────────────────────────────
-        idx_nrordem = df.index[df['NRORDEM'] == codigo].tolist()
-
-        # ── Tenta IDPEDIDO (pode ter múltiplos pneus) ───────────────────────
+        idx_nrordem  = df.index[df['NRORDEM']      == codigo].tolist()
         idx_idpedido = df.index[df['IDPEDIDOPNEU'] == codigo].tolist()
 
+        # ── Trava ativa: só aceita NRORDEM do ID travado ─────────────────────
+        if id_travado and idx_nrordem:
+            i = idx_nrordem[0]
+            id_do_pneu = str(df.at[i, 'IDPEDIDOPNEU']).strip()
+            if id_do_pneu != id_travado:
+                st.error(
+                    f"🔒 **TRAVA ATIVA!** Este pneu é do IDPEDIDO **{id_do_pneu}** "
+                    f"mas a trava está no **{id_travado}**.\n\n"
+                    f"Confirme todos os pneus do IDPEDIDO **{id_travado}** antes de continuar."
+                )
+                st.session_state.prod_bipe_key += 1
+                st.rerun()
+
         if idx_nrordem:
-            # ── Um pneu específico ───────────────────────────────────────────
+            # ── Bipe de pneu individual ──────────────────────────────────────
             i            = idx_nrordem[0]
             status_atual = str(df.at[i, 'STATUS']).strip()
             cliente      = df.at[i, 'CLIENTE']
             desenho      = df.at[i, 'DESENHO']
             nrserie      = df.at[i, 'NRSERIE']
+            id_pneu      = str(df.at[i, 'IDPEDIDOPNEU']).strip()
 
-            # Aceita Aguardando E Em Produção — pneu indo para linha agora
             if status_atual in ('Aguardando', 'Em Produção'):
                 st.session_state.bd_pneus.at[i, 'STATUS']       = 'Em Produção'
                 st.session_state.bd_pneus.at[i, 'DATA_ENTRADA'] = agora
                 salvar_dados(st.session_state.bd_pneus)
+
+                # Verifica se ainda faltam pneus do mesmo IDPEDIDO
+                df_up   = st.session_state.bd_pneus
+                faltam  = df_up[
+                    (df_up['IDPEDIDOPNEU'] == id_pneu) &
+                    (df_up['STATUS'].isin(['Aguardando', 'Em Produção']))
+                ]
+                total_id = len(df_up[df_up['IDPEDIDOPNEU'] == id_pneu])
+                na_linha = total_id - len(faltam)
+
+                if len(faltam) > 0 and id_travado == id_pneu:
+                    msg_extra = f" | Faltam **{len(faltam)}** pneus do IDPEDIDO {id_pneu}"
+                else:
+                    msg_extra = f" | {na_linha}/{total_id} pneus do IDPEDIDO {id_pneu} na linha"
+
                 st.session_state.msg_prod_bipe = (
-                    f"✅ **ENTRADA REGISTRADA!** OS **{codigo}** | **{cliente}** | "
-                    f"{desenho} | Série: {nrserie} → **Na Linha de Produção** ({agora})"
+                    f"✅ OS **{codigo}** | **{cliente}** | {desenho} | "
+                    f"Série: {nrserie} → **Na Linha!**{msg_extra}"
                 )
                 st.session_state.prod_bipe_key += 1
                 st.rerun()
@@ -296,27 +368,43 @@ def _aba_bipe(df_banco: pd.DataFrame):
                 st.error(f"🛑 OS **{codigo}** já foi **Expedida**.")
 
         elif idx_idpedido:
-            # ── Coleta inteira (IDPEDIDO) ────────────────────────────────────
+            # ── IDPEDIDO: ativa trava e mostra coleta ───────────────────────
+            # Verifica se há trava de outro ID ativa
+            if id_travado and id_travado != codigo:
+                os_trava  = df[df['IDPEDIDOPNEU'] == id_travado]
+                pendentes = os_trava[os_trava['STATUS'].isin(['Aguardando', 'Em Produção'])]
+                if len(pendentes) > 0:
+                    st.error(
+                        f"🔒 **Não é possível iniciar IDPEDIDO {codigo}!**\n\n"
+                        f"Ainda faltam **{len(pendentes)} pneus** do IDPEDIDO **{id_travado}** "
+                        f"entrarem na linha. Bipe todos antes de continuar."
+                    )
+                    st.session_state.prod_bipe_key += 1
+                    st.rerun()
+
             os_coleta  = df.loc[idx_idpedido].copy()
             cliente    = os_coleta['CLIENTE'].iloc[0]
-            # Pneus que ainda não foram confirmados na linha (Aguardando + Em Produção do CSV)
-            aguardando = os_coleta[os_coleta['STATUS'].isin(['Aguardando', 'Em Produção'])]
-            em_prod    = os_coleta[os_coleta['STATUS'] == 'Em Produção']
+            pendentes  = os_coleta[os_coleta['STATUS'].isin(['Aguardando', 'Em Produção'])]
             expedido   = os_coleta[os_coleta['STATUS'] == 'Expedido']
+            total      = len(os_coleta)
+            na_linha   = total - len(pendentes)
 
-            prontos = len(aguardando)
+            # Ativa trava automaticamente
+            if len(pendentes) > 0:
+                st.session_state.id_travado = codigo
+
             st.markdown(
                 f"<div style='background:#1a5276;border-radius:7px;padding:12px 18px;'>"
-                f"<h4 style='color:#fff;margin:0;'>📦 Coleta IDPEDIDO: {codigo} — {cliente}</h4>"
-                f"<small style='color:#aad;'>"
-                f"Total: {len(os_coleta)} pneus | "
-                f"🔵 {prontos} prontos p/ linha | "
+                f"<h4 style='color:#fff;margin:0;'>📦 IDPEDIDO: {codigo} — {cliente}</h4>"
+                f"<small style='color:#aad;'>Total: {total} pneus | "
+                f"🔵 {na_linha} na linha | ⏳ {len(pendentes)} faltando | "
                 f"🟢 {len(expedido)} Exped.</small></div>",
                 unsafe_allow_html=True
             )
+            st.progress(int(na_linha/total*100) if total else 0,
+                        text=f"{na_linha}/{total} na linha")
             st.markdown("")
 
-            # Tabela completa
             exibir = os_coleta[['NRORDEM','NRSERIE','DESENHO','STATUS','LOCAL_PALLET']].copy()
             exibir = exibir.rename(columns={'LOCAL_PALLET': 'Pallet'})
             st.dataframe(
@@ -324,33 +412,29 @@ def _aba_bipe(df_banco: pd.DataFrame):
                 use_container_width=True, hide_index=True
             )
 
-            if not aguardando.empty:
-                col1, col2 = st.columns(2)
-
-                if col1.button(
-                    f"▶️ Confirmar entrada de todos ({len(aguardando)}) na linha",
-                    key=f"lancar_todos_{codigo}",
-                    type="primary"
+            if not pendentes.empty:
+                c1, c2 = st.columns(2)
+                if c1.button(
+                    f"▶️ Confirmar todos ({len(pendentes)}) na linha",
+                    key=f"lancar_{codigo}", type="primary"
                 ):
-                    st.session_state.bd_pneus.loc[aguardando.index, 'STATUS']       = 'Em Produção'
-                    st.session_state.bd_pneus.loc[aguardando.index, 'DATA_ENTRADA'] = agora
+                    st.session_state.bd_pneus.loc[pendentes.index, 'STATUS']       = 'Em Produção'
+                    st.session_state.bd_pneus.loc[pendentes.index, 'DATA_ENTRADA'] = agora
                     salvar_dados(st.session_state.bd_pneus)
+                    st.session_state.id_travado    = None
                     st.session_state.msg_prod_bipe = (
-                        f"✅ **{len(aguardando)} pneus** da coleta **{codigo}** "
-                        f"({cliente}) confirmados na linha de produção! ({agora})"
+                        f"✅ **{len(pendentes)} pneus** do IDPEDIDO **{codigo}** "
+                        f"({cliente}) confirmados! Trava liberada."
                     )
                     st.session_state.prod_bipe_key += 1
                     st.rerun()
-
-                col2.info("Ou bipe cada NRORDEM individualmente no campo acima.")
+                c2.info("Ou bipe cada NRORDEM um por um.")
             else:
-                st.success("✅ Todos os pneus desta coleta já foram confirmados na linha.")
+                st.session_state.id_travado = None
+                st.success("✅ Todos os pneus desta coleta já estão na linha!")
 
         else:
-            st.error(
-                f"❌ Código **{codigo}** não encontrado.\n\n"
-                f"Verifique se é um NRORDEM válido ou um IDPEDIDO da coleta."
-            )
+            st.error(f"❌ **{codigo}** não encontrado. Verifique o NRORDEM ou IDPEDIDO.")
 
     # Feedback pós-bipe
     if st.session_state.get('msg_prod_bipe'):
@@ -403,6 +487,97 @@ def _aba_bipe(df_banco: pd.DataFrame):
             st.info(f"🔍 Bipe os **NRORDEM** acima no campo de leitura para dar baixa.")
     else:
         st.info("Carregue uma planilha na aba **📂 Importar Planilha** para ver os pneus a bipar.")
+
+
+def _aba_clientes_em_linha(df_banco: pd.DataFrame):
+    """
+    Mostra todos os clientes com pneus na linha de produção hoje,
+    com indicador de quantos faltam entrar por IDPEDIDO.
+    """
+    st.subheader("🏭 Clientes em Linha de Produção")
+
+    df = st.session_state.bd_pneus
+
+    # Todos os pneus Em Produção agrupados por cliente e IDPEDIDO
+    em_linha = df[df['STATUS'] == 'Em Produção'].copy()
+    # Pneus do mesmo cliente ainda aguardando
+    aguardando = df[df['STATUS'].isin(['Aguardando'])].copy()
+
+    if em_linha.empty:
+        st.info("Nenhum pneu em linha de produção no momento.")
+        return
+
+    # Agrupa por cliente
+    clientes = sorted(em_linha['CLIENTE'].replace('', pd.NA).dropna().unique())
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Clientes em linha", len(clientes))
+    c2.metric("Pneus em produção", len(em_linha))
+    c3.metric("Pneus aguardando entrada", len(aguardando))
+
+    st.markdown("---")
+
+    for cliente in clientes:
+        em_linha_cli = em_linha[em_linha['CLIENTE'] == cliente]
+        aguard_cli   = aguardando[aguardando['CLIENTE'] == cliente]
+        ids_cliente  = em_linha_cli['IDPEDIDOPNEU'].replace('', pd.NA).dropna().unique()
+
+        # Conta pneus faltando por IDPEDIDO
+        detalhes_ids = []
+        for idp in ids_cliente:
+            total_id   = len(df[df['IDPEDIDOPNEU'] == idp])
+            na_linha   = len(em_linha_cli[em_linha_cli['IDPEDIDOPNEU'] == idp])
+            faltam_id  = len(df[(df['IDPEDIDOPNEU'] == idp) &
+                                 (df['STATUS'].isin(['Aguardando']))])
+            detalhes_ids.append({
+                'IDPEDIDO': idp,
+                'Na Linha': na_linha,
+                'Total':    total_id,
+                'Faltam':   faltam_id,
+            })
+
+        total_na_linha = len(em_linha_cli)
+        total_faltam   = len(aguard_cli)
+        completo       = total_faltam == 0
+
+        cor_hdr = '#155724' if completo else '#004085'
+        icone   = '✅' if completo else '⏳'
+
+        with st.expander(
+            f"{icone} **{cliente}** — {total_na_linha} na linha | "
+            f"{'Completo' if completo else str(total_faltam) + ' faltando'}",
+            expanded=not completo
+        ):
+            # Tabela por IDPEDIDO
+            if detalhes_ids:
+                df_ids = pd.DataFrame(detalhes_ids)
+                def _cor_id(row):
+                    if row.get('Faltam', 0) == 0:
+                        return ['background:#d4edda;color:#155724'] * len(row)
+                    return ['background:#cce5ff;color:#004085'] * len(row)
+                st.dataframe(
+                    df_ids.style.apply(_cor_id, axis=1),
+                    use_container_width=True, hide_index=True
+                )
+
+            # Pneus na linha
+            st.markdown("**Pneus na linha:**")
+            exibir = em_linha_cli[['NRORDEM','IDPEDIDOPNEU','NRSERIE','DESENHO',
+                                    'LOCAL_PALLET','DATA_ENTRADA']].copy()
+            exibir = exibir.rename(columns={
+                'LOCAL_PALLET': 'Pallet', 'DATA_ENTRADA': 'Entrada'
+            })
+            st.dataframe(exibir, use_container_width=True, hide_index=True)
+
+            # Pneus que ainda faltam
+            if not aguard_cli.empty:
+                st.markdown(f"**⏳ Faltam entrar ({len(aguard_cli)}):**")
+                falt = aguard_cli[['NRORDEM','IDPEDIDOPNEU','NRSERIE','DESENHO','LOCAL_PALLET']].copy()
+                falt = falt.rename(columns={'LOCAL_PALLET': 'Pallet'})
+                st.dataframe(
+                    falt.style.applymap(lambda _: 'background:#fff3cd;color:#856404'),
+                    use_container_width=True, hide_index=True
+                )
 
 
 def _aba_importar(df_banco: pd.DataFrame):
