@@ -17,11 +17,24 @@ from pathlib import Path
 _BASE_DIR   = Path(__file__).resolve().parent.parent
 _PLANO_JSON = _BASE_DIR / "data" / "plano_diario.json"
 
-# Colunas 0-based de cada linha de produção
+# Configuração base das linhas de produção
+# col_id: detectado automaticamente pela busca do header "IDPEDIDO"
+# Fallback: F(5), K(10), Q(16) — posições padrão adicionadas na planilha
 _CFG_LINHAS = {
     'A': {'col_id': 5,  'col_cliente': 2,  'col_qtd': 3,  'col_status': 4,  'cor': '#1a5276', 'emoji': '🔵'},
     'B': {'col_id': 10, 'col_cliente': 7,  'col_qtd': 8,  'col_status': 9,  'cor': '#1e8449', 'emoji': '🟢'},
     'C': {'col_id': 16, 'col_cliente': 12, 'col_qtd': 13, 'col_status': 15, 'cor': '#784212', 'emoji': '🟠'},
+}
+
+# Colunas onde o usuário pode ter colocado IDPEDIDO manualmente
+# Aceita qualquer coluna com header contendo "IDPEDIDO" ou "ID"
+_COLUNAS_ID_MANUAL = {
+    'C': 2,   # usuário indicou col C
+    'L': 11,  # usuário indicou col L
+    'U': 20,  # usuário indicou col U
+    'F': 5,   # padrão Linha A
+    'K': 10,  # padrão Linha B
+    'Q': 16,  # padrão Linha C
 }
 _LINHA_INI = 7
 _LINHA_FIM = 26
@@ -80,6 +93,48 @@ def _carregar_plano() -> dict:
 
 # ── Leitura da planilha ───────────────────────────────────────────────────────
 
+def _detectar_colunas_id(df: pd.DataFrame) -> dict:
+    """
+    Detecta automaticamente as colunas de IDPEDIDO na planilha.
+    Procura por headers contendo 'IDPEDIDO' ou 'ID' nas linhas 6-7.
+    Retorna {linha_producao: col_index} ex: {'A': 5, 'B': 10, 'C': 16}
+    """
+    cols_encontradas = []
+
+    # Varre linhas de cabeçalho procurando "IDPEDIDO" ou "ID"
+    for row_idx in range(5, 8):
+        if row_idx >= len(df):
+            break
+        for col_idx in range(len(df.columns)):
+            val = str(df.iloc[row_idx, col_idx]).strip().upper()
+            if val in ('IDPEDIDO', 'ID', 'IDPEDIDO\n', 'ID PEDIDO', 'ID_PEDIDO'):
+                if col_idx not in cols_encontradas:
+                    cols_encontradas.append(col_idx)
+
+    # Também tenta as colunas que o usuário indicou (C=2, L=11, U=20)
+    for nome, idx in _COLUNAS_ID_MANUAL.items():
+        if idx < len(df.columns) and idx not in cols_encontradas:
+            # Verifica se alguma linha de dados tem valor numérico nessa coluna
+            for row_idx in range(_LINHA_INI, min(_LINHA_FIM, len(df))):
+                val = str(df.iloc[row_idx, idx]).strip()
+                if val and val not in ('', 'nan') and val.isdigit():
+                    cols_encontradas.append(idx)
+                    break
+
+    cols_encontradas = sorted(set(cols_encontradas))
+
+    # Associa cada coluna encontrada a uma linha de produção (A, B, C)
+    linhas = list(_CFG_LINHAS.keys())
+    resultado = {}
+    for i, linha_id in enumerate(linhas):
+        if i < len(cols_encontradas):
+            resultado[linha_id] = cols_encontradas[i]
+        else:
+            resultado[linha_id] = _CFG_LINHAS[linha_id]['col_id']  # fallback padrão
+
+    return resultado
+
+
 def _ler_planilha(arquivo) -> dict:
     df = pd.read_excel(arquivo, sheet_name=0, header=None, dtype=str)
     df = df.fillna('')
@@ -95,27 +150,32 @@ def _ler_planilha(arquivo) -> dict:
     except Exception:
         pass
 
-    resultado = {'data': data_str, 'linhas': {}}
+    # Detecta automaticamente as colunas de IDPEDIDO
+    colunas_id = _detectar_colunas_id(df)
+
+    resultado = {'data': data_str, 'linhas': {}, 'colunas_id': colunas_id}
 
     for linha_id, cfg in _CFG_LINHAS.items():
+        col_id = colunas_id.get(linha_id, cfg['col_id'])
         itens = []
+
         for row_idx in range(_LINHA_INI, min(_LINHA_FIM, len(df))):
             try:
                 cliente = str(df.iloc[row_idx, cfg['col_cliente']]).strip()
                 qtd     = str(df.iloc[row_idx, cfg['col_qtd']]).strip()
 
-                # Ignora linhas vazias ou de totais
                 if not cliente or cliente in ('', 'nan'):
                     continue
                 if any(p in cliente.upper() for p in ('TOTAL', 'PROGRAMADO')):
                     continue
 
-                # IDPEDIDO — pode estar vazio
+                # Lê IDPEDIDO da coluna detectada
                 idpedido = ''
                 try:
-                    val = str(df.iloc[row_idx, cfg['col_id']]).strip()
-                    if val and val not in ('nan', '0', ''):
-                        idpedido = val
+                    if col_id < len(df.columns):
+                        val = str(df.iloc[row_idx, col_id]).strip()
+                        if val and val not in ('nan', '0', '') and val.replace('.','').isdigit():
+                            idpedido = val.split('.')[0]  # remove decimal se houver
                 except Exception:
                     pass
 
