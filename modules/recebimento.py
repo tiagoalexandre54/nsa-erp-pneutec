@@ -15,10 +15,11 @@ def tela_recebimento():
         st.warning("Nenhuma OS cadastrada no sistema. Importe o CSV pelo Painel PPCP.")
         return
 
-    aba1, aba2, aba3 = st.tabs([
+    aba1, aba2, aba3, aba4 = st.tabs([
         "📦 1. Alocar no Pallet (Bipe)",
         "🔄 2. Movimentar/Transferir",
-        "📋 3. Mapa FIFO (Puxar Produção)",
+        "🗺️ 3. Mapa de Capacidade",
+        "📋 4. Mapa FIFO (Puxar Produção)",
     ])
 
     with aba1:
@@ -26,6 +27,8 @@ def tela_recebimento():
     with aba2:
         _aba_movimentar_pallet(df)
     with aba3:
+        _aba_mapa_capacidade(df)
+    with aba4:
         _aba_mapa_fifo(df)
 
 
@@ -162,7 +165,108 @@ def _aba_movimentar_pallet(df: pd.DataFrame):
                 st.rerun()
 
 
-# ── 3. Mapa FIFO (Visualização de Prioridade) ────────────────────────────────
+# ── 3. Mapa de Capacidade (Visualização por Pallet) ──────────────────────────
+def _aba_mapa_capacidade(df: pd.DataFrame):
+    st.subheader("Mapa de Capacidade dos Pallets")
+
+    aguardando = df[df['STATUS'] == 'Aguardando'].copy()
+    com_pallet = aguardando[aguardando['LOCAL_PALLET'] != '']
+    sem_pallet = aguardando[aguardando['LOCAL_PALLET'] == '']
+
+    col_resumo1, col_resumo2, col_resumo3 = st.columns(3)
+    col_resumo1.metric("Pallets Ativos", com_pallet['LOCAL_PALLET'].nunique())
+    col_resumo2.metric("Pneus Alocados", len(com_pallet))
+    col_resumo3.metric("Pneus Sem Pallet", len(sem_pallet))
+
+    st.markdown("---")
+
+    if com_pallet.empty:
+        st.info("Nenhum pallet com pneus alocados no momento.")
+        return
+
+    # Filtro por cliente
+    clientes_disponiveis = sorted(com_pallet['CLIENTE'].unique().tolist())
+    filtro_cliente = st.selectbox(
+        "Filtrar por Cliente (opcional):",
+        ["Todos"] + clientes_disponiveis,
+        key="mapa_cap_cliente",
+    )
+
+    if filtro_cliente != "Todos":
+        com_pallet = com_pallet[com_pallet['CLIENTE'] == filtro_cliente]
+
+    pallets = sorted(com_pallet['LOCAL_PALLET'].unique().tolist())
+
+    # Renderiza 3 pallets por linha
+    cols_por_linha = 3
+    for i in range(0, len(pallets), cols_por_linha):
+        cols = st.columns(cols_por_linha)
+        for j, pallet in enumerate(pallets[i:i + cols_por_linha]):
+            pneus_pallet = com_pallet[com_pallet['LOCAL_PALLET'] == pallet]
+            qtd = len(pneus_pallet)
+            clientes_no_pallet = pneus_pallet['CLIENTE'].unique().tolist()
+
+            # Cor do card baseada na quantidade
+            if qtd >= 8:
+                cor_borda = "#e74c3c"  # vermelho — cheio
+                cor_header = "#c0392b"
+                label_status = "🔴 CHEIO"
+            elif qtd >= 5:
+                cor_borda = "#f39c12"  # laranja — quase cheio
+                cor_header = "#d68910"
+                label_status = "🟡 ATENÇÃO"
+            else:
+                cor_borda = "#27ae60"  # verde — disponível
+                cor_header = "#1e8449"
+                label_status = "🟢 OK"
+
+            # Linhas de pneus no card
+            linhas_pneus = ""
+            for _, row in pneus_pallet.iterrows():
+                nrordem  = row.get('NRORDEM', '')
+                cliente  = str(row.get('CLIENTE', '')).split()[0]  # primeira palavra do cliente
+                desenho  = row.get('DESENHO', '')
+                linhas_pneus += (
+                    f"<div style='padding:3px 0;border-bottom:1px solid #ddd;font-size:12px;'>"
+                    f"<b>OS {nrordem}</b> &nbsp;·&nbsp; {cliente} &nbsp;·&nbsp; {desenho}"
+                    f"</div>"
+                )
+
+            clientes_str = "<br>".join(clientes_no_pallet)
+
+            cols[j].markdown(
+                f"""
+                <div style="border:2px solid {cor_borda};border-radius:10px;
+                            margin-bottom:16px;overflow:hidden;">
+                  <div style="background:{cor_header};padding:8px 12px;">
+                    <span style="color:#fff;font-size:15px;font-weight:bold;">
+                      📦 {pallet}
+                    </span>
+                    <span style="float:right;color:#fff;font-size:12px;">{label_status}</span>
+                  </div>
+                  <div style="padding:8px 12px;background:#1a1a2e;">
+                    <div style="font-size:13px;color:#aaa;margin-bottom:6px;">
+                      <b style="color:#fff;">{qtd} pneu(s)</b> &nbsp;|&nbsp; {clientes_str}
+                    </div>
+                    {linhas_pneus}
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    # Pneus sem pallet ao final
+    if not sem_pallet.empty:
+        st.markdown("---")
+        st.warning(f"⚠️ **{len(sem_pallet)} pneus sem pallet definido:**")
+        st.dataframe(
+            sem_pallet[['NRORDEM', 'IDPEDIDOPNEU', 'CLIENTE', 'DESENHO']],
+            use_container_width=True,
+            hide_index=True,
+        )
+
+
+# ── 4. Mapa FIFO (Visualização de Prioridade) ────────────────────────────────
 def _aba_mapa_fifo(df: pd.DataFrame):
     st.subheader("Mapa FIFO (First In, First Out)")
     st.info("Puxe para a Produção sempre os pallets do TOPO desta lista (os mais antigos na fábrica).")
@@ -173,7 +277,6 @@ def _aba_mapa_fifo(df: pd.DataFrame):
         st.success("O pátio está vazio! Nenhum pneu aguardando.")
         return
 
-    # Converte DATA_ENTRADA para datetime (tenta com hora e sem hora)
     aguardando['DATA_CALCULO'] = pd.to_datetime(
         aguardando['DATA_ENTRADA'], format="%d/%m/%Y %H:%M:%S", errors='coerce'
     )
@@ -200,10 +303,10 @@ def _aba_mapa_fifo(df: pd.DataFrame):
     st.markdown("---")
 
     for pos, (_, row) in enumerate(resumo.iterrows()):
-        pallet     = row['LOCAL_PALLET']
-        qtd        = row['Qtd_Pneus']
+        pallet      = row['LOCAL_PALLET']
+        qtd         = row['Qtd_Pneus']
         data_antiga = row['Data do Pneu + Antigo']
-        clientes   = row['Clientes']
+        clientes    = row['Clientes']
 
         if pos == 0:
             cor_bg  = "#f8d7da"
