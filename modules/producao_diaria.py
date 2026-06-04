@@ -280,19 +280,17 @@ def _aba_bipe(df_banco: pd.DataFrame):
             desenho      = df.at[i, 'DESENHO']
             nrserie      = df.at[i, 'NRSERIE']
 
-            if status_atual == 'Aguardando':
+            # Aceita Aguardando E Em Produção — pneu indo para linha agora
+            if status_atual in ('Aguardando', 'Em Produção'):
                 st.session_state.bd_pneus.at[i, 'STATUS']       = 'Em Produção'
                 st.session_state.bd_pneus.at[i, 'DATA_ENTRADA'] = agora
                 salvar_dados(st.session_state.bd_pneus)
                 st.session_state.msg_prod_bipe = (
-                    f"✅ **BAIXA!** OS **{codigo}** | **{cliente}** | "
-                    f"{desenho} | Série: {nrserie} → **Em Produção**"
+                    f"✅ **ENTRADA REGISTRADA!** OS **{codigo}** | **{cliente}** | "
+                    f"{desenho} | Série: {nrserie} → **Na Linha de Produção** ({agora})"
                 )
                 st.session_state.prod_bipe_key += 1
                 st.rerun()
-
-            elif status_atual == 'Em Produção':
-                st.warning(f"⚠️ OS **{codigo}** já está **Em Produção** desde {df.at[i,'DATA_ENTRADA'] or '—'}.")
 
             elif status_atual == 'Expedido':
                 st.error(f"🛑 OS **{codigo}** já foi **Expedida**.")
@@ -301,17 +299,18 @@ def _aba_bipe(df_banco: pd.DataFrame):
             # ── Coleta inteira (IDPEDIDO) ────────────────────────────────────
             os_coleta  = df.loc[idx_idpedido].copy()
             cliente    = os_coleta['CLIENTE'].iloc[0]
-            aguardando = os_coleta[os_coleta['STATUS'] == 'Aguardando']
+            # Pneus que ainda não foram confirmados na linha (Aguardando + Em Produção do CSV)
+            aguardando = os_coleta[os_coleta['STATUS'].isin(['Aguardando', 'Em Produção'])]
             em_prod    = os_coleta[os_coleta['STATUS'] == 'Em Produção']
             expedido   = os_coleta[os_coleta['STATUS'] == 'Expedido']
 
+            prontos = len(aguardando)
             st.markdown(
                 f"<div style='background:#1a5276;border-radius:7px;padding:12px 18px;'>"
                 f"<h4 style='color:#fff;margin:0;'>📦 Coleta IDPEDIDO: {codigo} — {cliente}</h4>"
                 f"<small style='color:#aad;'>"
                 f"Total: {len(os_coleta)} pneus | "
-                f"🟡 {len(aguardando)} Aguard. | "
-                f"🔵 {len(em_prod)} Prod. | "
+                f"🔵 {prontos} prontos p/ linha | "
                 f"🟢 {len(expedido)} Exped.</small></div>",
                 unsafe_allow_html=True
             )
@@ -328,10 +327,9 @@ def _aba_bipe(df_banco: pd.DataFrame):
             if not aguardando.empty:
                 col1, col2 = st.columns(2)
 
-                # Lança TODOS os aguardando
                 if col1.button(
-                    f"▶️ Lançar todos ({len(aguardando)}) em Produção",
-                    key=f"lançar_todos_{codigo}",
+                    f"▶️ Confirmar entrada de todos ({len(aguardando)}) na linha",
+                    key=f"lancar_todos_{codigo}",
                     type="primary"
                 ):
                     st.session_state.bd_pneus.loc[aguardando.index, 'STATUS']       = 'Em Produção'
@@ -339,14 +337,14 @@ def _aba_bipe(df_banco: pd.DataFrame):
                     salvar_dados(st.session_state.bd_pneus)
                     st.session_state.msg_prod_bipe = (
                         f"✅ **{len(aguardando)} pneus** da coleta **{codigo}** "
-                        f"({cliente}) lançados em Produção!"
+                        f"({cliente}) confirmados na linha de produção! ({agora})"
                     )
                     st.session_state.prod_bipe_key += 1
                     st.rerun()
 
-                col2.info(f"Ou bipe cada NRORDEM individualmente no campo acima.")
+                col2.info("Ou bipe cada NRORDEM individualmente no campo acima.")
             else:
-                st.success(f"✅ Todos os pneus desta coleta já estão em produção ou expedidos.")
+                st.success("✅ Todos os pneus desta coleta já foram confirmados na linha.")
 
         else:
             st.error(
