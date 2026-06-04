@@ -262,6 +262,8 @@ def _aba_importar(df_banco: pd.DataFrame):
         transito_list = []
         for item in itens:
             os_cliente = _buscar_os(item['idpedido'], item['cliente'], df_banco)
+            if os_cliente.empty or 'STATUS' not in os_cliente.columns:
+                continue
             aguardando = os_cliente[os_cliente['STATUS'] == 'Aguardando']
             if not aguardando.empty:
                 transito_list.append(aguardando)
