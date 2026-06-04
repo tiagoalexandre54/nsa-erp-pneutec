@@ -224,14 +224,127 @@ def tela_producao_diaria():
 
     df_banco = st.session_state.bd_pneus
 
-    # ── Abas: Importar / Ver plano salvo ─────────────────────────────────────
-    aba1, aba2 = st.tabs(["📂 Importar Planilha", "📋 Plano Salvo"])
+    # ── Abas ─────────────────────────────────────────────────────────────────
+    aba1, aba2, aba3 = st.tabs(["📷 Bipe de Entrada", "📂 Importar Planilha", "📋 Plano Salvo"])
 
     with aba1:
-        _aba_importar(df_banco)
+        _aba_bipe(df_banco)
 
     with aba2:
+        _aba_importar(df_banco)
+
+    with aba3:
         _aba_plano_salvo(df_banco)
+
+
+def _aba_bipe(df_banco: pd.DataFrame):
+    """Bipe de entrada na produção — dá baixa automática ao escanear a OS."""
+    from modules.database import salvar_dados
+
+    st.subheader("📷 Bipagem de Entrada na Produção")
+    st.info("Bipe a OS do pneu. O sistema dá baixa automática e registra a entrada na produção.")
+
+    # Rotação de key para limpar campo após bipe
+    if 'prod_bipe_key' not in st.session_state:
+        st.session_state.prod_bipe_key = 0
+
+    os_bipada = st.text_input(
+        "Bipe a OS (NRORDEM):",
+        key=f"bipe_prod_{st.session_state.prod_bipe_key}",
+        placeholder="Aguardando leitura do código de barras..."
+    )
+
+    if os_bipada:
+        os_bipada = os_bipada.strip()
+        df = st.session_state.bd_pneus
+        idx_lista = df.index[df['NRORDEM'] == os_bipada].tolist()
+
+        if not idx_lista:
+            st.error(f"❌ OS **{os_bipada}** não encontrada no sistema.")
+        else:
+            i = idx_lista[0]
+            status_atual = str(df.at[i, 'STATUS']).strip()
+            cliente      = df.at[i, 'CLIENTE']
+            desenho      = df.at[i, 'DESENHO']
+            nrserie      = df.at[i, 'NRSERIE']
+
+            if status_atual == 'Aguardando':
+                agora = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                st.session_state.bd_pneus.at[i, 'STATUS']       = 'Em Produção'
+                st.session_state.bd_pneus.at[i, 'DATA_ENTRADA'] = agora
+                salvar_dados(st.session_state.bd_pneus)
+                st.session_state.msg_prod_bipe = {
+                    'tipo': 'sucesso',
+                    'texto': (
+                        f"✅ **BAIXA REGISTRADA!** OS **{os_bipada}** | "
+                        f"**{cliente}** | {desenho} | Série: {nrserie} → **Em Produção**"
+                    )
+                }
+                st.session_state.prod_bipe_key += 1
+                st.rerun()
+
+            elif status_atual == 'Em Produção':
+                st.warning(
+                    f"⚠️ OS **{os_bipada}** já está **Em Produção** "
+                    f"desde {df.at[i, 'DATA_ENTRADA'] or '(sem data)'}."
+                )
+
+            elif status_atual == 'Expedido':
+                st.error(f"🛑 OS **{os_bipada}** já foi **Expedida**.")
+
+    # Feedback pós-bipe
+    if st.session_state.get('msg_prod_bipe'):
+        msg = st.session_state.msg_prod_bipe
+        if msg['tipo'] == 'sucesso':
+            st.success(msg['texto'])
+        st.session_state.msg_prod_bipe = None
+
+    st.markdown("---")
+
+    # Painel de OS aguardando (do plano salvo)
+    plano = _carregar_plano()
+    if plano:
+        st.subheader(f"📋 Aguardando Produção — Plano {plano.get('data','')}")
+        df_atual = st.session_state.bd_pneus
+        total_aguard = 0
+
+        for linha_id, cfg in _CFG_LINHAS.items():
+            itens = plano.get('linhas', {}).get(linha_id, [])
+            aguard_linha = []
+
+            for item in itens:
+                os_cli = _buscar_os(item.get('idpedido',''), item.get('cliente',''), df_atual)
+                os_aguard = os_cli[os_cli['STATUS'] == 'Aguardando'] if not os_cli.empty else pd.DataFrame()
+                if not os_aguard.empty:
+                    for _, row in os_aguard.iterrows():
+                        aguard_linha.append({
+                            'NRORDEM': row['NRORDEM'],
+                            'Cliente': item['cliente'],
+                            'Desenho': row['DESENHO'],
+                            'Série':   row['NRSERIE'],
+                            'Pallet':  row.get('LOCAL_PALLET', ''),
+                        })
+                    total_aguard += len(os_aguard)
+
+            if aguard_linha:
+                st.markdown(
+                    f"<div style='background:{cfg['cor']};border-radius:5px;"
+                    f"padding:6px 12px;margin:6px 0 2px;'>"
+                    f"<b style='color:#fff;'>{cfg['emoji']} LINHA {linha_id} "
+                    f"— {len(aguard_linha)} pneu(s) aguardando</b></div>",
+                    unsafe_allow_html=True
+                )
+                st.dataframe(
+                    pd.DataFrame(aguard_linha),
+                    use_container_width=True, hide_index=True
+                )
+
+        if total_aguard == 0:
+            st.success("✅ Todos os pneus do plano já estão em produção!")
+        else:
+            st.info(f"🔍 Bipe os **NRORDEM** acima no campo de leitura para dar baixa.")
+    else:
+        st.info("Carregue uma planilha na aba **📂 Importar Planilha** para ver os pneus a bipar.")
 
 
 def _aba_importar(df_banco: pd.DataFrame):
