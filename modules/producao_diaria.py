@@ -6,10 +6,18 @@ import streamlit as st
 import pandas as pd
 import datetime
 import json
+import re
+import unicodedata
 from pathlib import Path
 
 _BASE_DIR   = Path(__file__).resolve().parent.parent
 _PLANO_JSON = _BASE_DIR / "data" / "plano_diario.json"
+
+
+def _norm(s: str) -> str:
+    """Remove acentos, caixa alta, espaços extras — para comparar nomes."""
+    s = unicodedata.normalize('NFKD', str(s)).encode('ascii', 'ignore').decode()
+    return re.sub(r'\s+', ' ', s).upper().strip()
 
 
 # ── Persistência do Plano Diário no GitHub ────────────────────────────────────
@@ -133,23 +141,35 @@ def _ler_planilha(arquivo) -> dict:
 
 def _buscar_os(idpedido: str, cliente: str, df_banco: pd.DataFrame) -> pd.DataFrame:
     """Busca os pneus do cliente, priorizando o IDPEDIDO se existir.
-    Fallback: banco contém o nome abreviado da planilha (mínimo 4 chars)."""
+    Fallback: nome da planilha aparece como palavra no nome do banco
+    (com acentos normalizados)."""
     if idpedido:
-        res = df_banco[df_banco['IDPEDIDOPNEU'] == idpedido]
+        res = df_banco[df_banco['IDPEDIDOPNEU'].astype(str).str.strip() == str(idpedido).strip()]
         if not res.empty:
             return res
-    if cliente:
-        cliente_up = cliente.upper().strip()
-        nomes = df_banco['CLIENTE'].str.upper().str.strip()
-        # 1. Match exato
-        res = df_banco[nomes == cliente_up]
+    if not cliente:
+        return pd.DataFrame()
+
+    alvo = _norm(cliente)
+    if not alvo:
+        return pd.DataFrame()
+
+    nomes = df_banco['CLIENTE'].apply(_norm)
+
+    # 1. Match exato (sem acento)
+    res = df_banco[nomes == alvo]
+    if not res.empty:
+        return res
+
+    # 2. Nome da planilha aparece como PALAVRA INTEIRA no banco.
+    #    \bALVO\b — "TRANSCAP" casa "AUTO VIAÇÃO TRANSCAP LTDA",
+    #    mas "EMP" NÃO casa dentro de "EMPREENDIMENTOS".
+    if len(alvo) >= 2:
+        padrao = r'\b' + re.escape(alvo) + r'\b'
+        res = df_banco[nomes.str.contains(padrao, regex=True, na=False)]
         if not res.empty:
             return res
-        # 2. Banco contém o nome da planilha — só se tiver ≥4 chars (evita matches amplos)
-        if len(cliente_up) >= 4:
-            res = df_banco[nomes.str.contains(cliente_up, regex=False, na=False)]
-            if not res.empty:
-                return res
+
     return pd.DataFrame()
 
 
