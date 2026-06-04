@@ -238,59 +238,121 @@ def tela_producao_diaria():
 
 
 def _aba_bipe(df_banco: pd.DataFrame):
-    """Bipe de entrada na produção — dá baixa automática ao escanear a OS."""
+    """
+    Bipe de entrada na produção.
+    Aceita:
+      - NRORDEM   → dá baixa em 1 pneu
+      - IDPEDIDO  → mostra toda a coleta e permite lançar em lote
+    """
     from modules.database import salvar_dados
 
     st.subheader("📷 Bipagem de Entrada na Produção")
-    st.info("Bipe a OS do pneu. O sistema dá baixa automática e registra a entrada na produção.")
+    st.info(
+        "**Bipe o NRORDEM** para dar baixa em 1 pneu, ou "
+        "**digite o IDPEDIDO** para ver e lançar toda a coleta de uma vez."
+    )
 
-    # Rotação de key para limpar campo após bipe
     if 'prod_bipe_key' not in st.session_state:
         st.session_state.prod_bipe_key = 0
 
-    os_bipada = st.text_input(
-        "Bipe a OS (NRORDEM):",
+    codigo = st.text_input(
+        "🔍 Bipe NRORDEM ou IDPEDIDO:",
         key=f"bipe_prod_{st.session_state.prod_bipe_key}",
-        placeholder="Aguardando leitura do código de barras..."
+        placeholder="Ex: 1610546 (NRORDEM) ou 356774 (IDPEDIDO da coleta)"
     )
 
-    if os_bipada:
-        os_bipada = os_bipada.strip()
-        df = st.session_state.bd_pneus
-        idx_lista = df.index[df['NRORDEM'] == os_bipada].tolist()
+    if codigo:
+        codigo = codigo.strip()
+        df     = st.session_state.bd_pneus
+        agora  = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-        if not idx_lista:
-            st.error(f"❌ OS **{os_bipada}** não encontrada no sistema.")
-        else:
-            i = idx_lista[0]
+        # ── Tenta NRORDEM primeiro (busca exata) ────────────────────────────
+        idx_nrordem = df.index[df['NRORDEM'] == codigo].tolist()
+
+        # ── Tenta IDPEDIDO (pode ter múltiplos pneus) ───────────────────────
+        idx_idpedido = df.index[df['IDPEDIDOPNEU'] == codigo].tolist()
+
+        if idx_nrordem:
+            # ── Um pneu específico ───────────────────────────────────────────
+            i            = idx_nrordem[0]
             status_atual = str(df.at[i, 'STATUS']).strip()
             cliente      = df.at[i, 'CLIENTE']
             desenho      = df.at[i, 'DESENHO']
             nrserie      = df.at[i, 'NRSERIE']
 
             if status_atual == 'Aguardando':
-                agora = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 st.session_state.bd_pneus.at[i, 'STATUS']       = 'Em Produção'
                 st.session_state.bd_pneus.at[i, 'DATA_ENTRADA'] = agora
                 salvar_dados(st.session_state.bd_pneus)
-                st.session_state.msg_prod_bipe = {
-                    'tipo': 'sucesso',
-                    'texto': (
-                        f"✅ **BAIXA REGISTRADA!** OS **{os_bipada}** | "
-                        f"**{cliente}** | {desenho} | Série: {nrserie} → **Em Produção**"
-                    )
-                }
+                st.session_state.msg_prod_bipe = (
+                    f"✅ **BAIXA!** OS **{codigo}** | **{cliente}** | "
+                    f"{desenho} | Série: {nrserie} → **Em Produção**"
+                )
                 st.session_state.prod_bipe_key += 1
                 st.rerun()
 
             elif status_atual == 'Em Produção':
-                st.warning(
-                    f"⚠️ OS **{os_bipada}** já está **Em Produção** "
-                    f"desde {df.at[i, 'DATA_ENTRADA'] or '(sem data)'}."
-                )
+                st.warning(f"⚠️ OS **{codigo}** já está **Em Produção** desde {df.at[i,'DATA_ENTRADA'] or '—'}.")
 
             elif status_atual == 'Expedido':
-                st.error(f"🛑 OS **{os_bipada}** já foi **Expedida**.")
+                st.error(f"🛑 OS **{codigo}** já foi **Expedida**.")
+
+        elif idx_idpedido:
+            # ── Coleta inteira (IDPEDIDO) ────────────────────────────────────
+            os_coleta  = df.loc[idx_idpedido].copy()
+            cliente    = os_coleta['CLIENTE'].iloc[0]
+            aguardando = os_coleta[os_coleta['STATUS'] == 'Aguardando']
+            em_prod    = os_coleta[os_coleta['STATUS'] == 'Em Produção']
+            expedido   = os_coleta[os_coleta['STATUS'] == 'Expedido']
+
+            st.markdown(
+                f"<div style='background:#1a5276;border-radius:7px;padding:12px 18px;'>"
+                f"<h4 style='color:#fff;margin:0;'>📦 Coleta IDPEDIDO: {codigo} — {cliente}</h4>"
+                f"<small style='color:#aad;'>"
+                f"Total: {len(os_coleta)} pneus | "
+                f"🟡 {len(aguardando)} Aguard. | "
+                f"🔵 {len(em_prod)} Prod. | "
+                f"🟢 {len(expedido)} Exped.</small></div>",
+                unsafe_allow_html=True
+            )
+            st.markdown("")
+
+            # Tabela completa
+            exibir = os_coleta[['NRORDEM','NRSERIE','DESENHO','STATUS','LOCAL_PALLET']].copy()
+            exibir = exibir.rename(columns={'LOCAL_PALLET': 'Pallet'})
+            st.dataframe(
+                exibir.style.apply(_colorir_status, axis=1),
+                use_container_width=True, hide_index=True
+            )
+
+            if not aguardando.empty:
+                col1, col2 = st.columns(2)
+
+                # Lança TODOS os aguardando
+                if col1.button(
+                    f"▶️ Lançar todos ({len(aguardando)}) em Produção",
+                    key=f"lançar_todos_{codigo}",
+                    type="primary"
+                ):
+                    st.session_state.bd_pneus.loc[aguardando.index, 'STATUS']       = 'Em Produção'
+                    st.session_state.bd_pneus.loc[aguardando.index, 'DATA_ENTRADA'] = agora
+                    salvar_dados(st.session_state.bd_pneus)
+                    st.session_state.msg_prod_bipe = (
+                        f"✅ **{len(aguardando)} pneus** da coleta **{codigo}** "
+                        f"({cliente}) lançados em Produção!"
+                    )
+                    st.session_state.prod_bipe_key += 1
+                    st.rerun()
+
+                col2.info(f"Ou bipe cada NRORDEM individualmente no campo acima.")
+            else:
+                st.success(f"✅ Todos os pneus desta coleta já estão em produção ou expedidos.")
+
+        else:
+            st.error(
+                f"❌ Código **{codigo}** não encontrado.\n\n"
+                f"Verifique se é um NRORDEM válido ou um IDPEDIDO da coleta."
+            )
 
     # Feedback pós-bipe
     if st.session_state.get('msg_prod_bipe'):
