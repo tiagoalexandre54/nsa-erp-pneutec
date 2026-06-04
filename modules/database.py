@@ -94,7 +94,7 @@ def _salvar_csv_github(df: pd.DataFrame) -> None:
 
     requests.put(url, json=payload, headers=headers, timeout=15)
 
-COLUNAS = ['NRORDEM', 'IDPEDIDOPNEU', 'CLIENTE', 'NRSERIE', 'DESENHO', 'STATUS', 'DATA_ENTRADA', 'DATA_SAIDA']
+COLUNAS = ['NRORDEM', 'IDPEDIDOPNEU', 'CLIENTE', 'NRSERIE', 'DESENHO', 'STATUS', 'DATA_ENTRADA', 'DATA_SAIDA', 'LOCAL_PALLET']
 
 DADOS_INICIAIS = {
     'NRORDEM':      ['1662315', '1662318', '1662247', '1662248', '1584421'],
@@ -105,6 +105,7 @@ DADOS_INICIAIS = {
     'STATUS':       ['Aguardando', 'Aguardando', 'Em Produção', 'Em Produção', 'Aguardando'],
     'DATA_ENTRADA': ['', '', '', '', ''],
     'DATA_SAIDA':   ['', '', '', '', ''],
+    'LOCAL_PALLET': ['', '', '', '', ''],
 }
 
 # ── Mapeamento de nomes alternativos de colunas ──────────────────────────────
