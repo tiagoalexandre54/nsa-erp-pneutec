@@ -1,49 +1,94 @@
 """
 Tela — Pneus a Produzir.
 
-Lê a planilha PLANEJAMENTO_DIARIO_PCP.xlsx, extrai os IDPEDIDO
-de cada linha de produção (A, B, C) e exibe as OS correspondentes
-do banco de dados, prontas para entrar em produção.
+Lê a planilha PLANEJAMENTO_DIARIO_PCP.xlsx e vincula cada cliente
+com as OS do banco. Salva o plano diário para consulta posterior.
+
+Cruzamento:
+ - Se IDPEDIDO preenchido (cols F/K/Q) → busca por IDPEDIDOPNEU
+ - Se não preenchido → busca por nome do CLIENTE (match parcial)
 """
 import streamlit as st
 import pandas as pd
 import datetime
-from io import BytesIO
+import json
+from pathlib import Path
 
+_BASE_DIR   = Path(__file__).resolve().parent.parent
+_PLANO_JSON = _BASE_DIR / "data" / "plano_diario.json"
 
-# Mapeamento das colunas de IDPEDIDO na planilha
-# Linha A → col F (5), Linha B → col K (10), Linha C → col Q (16)
-_LINHAS = {
-    'A': {'col_id': 5,  'col_cliente': 2, 'col_qtd': 3, 'cor': '#1a5276', 'emoji': '🔵'},
-    'B': {'col_id': 10, 'col_cliente': 7, 'col_qtd': 8, 'cor': '#1e8449', 'emoji': '🟢'},
-    'C': {'col_id': 16, 'col_cliente': 12,'col_qtd': 13, 'cor': '#784212', 'emoji': '🟠'},
+# Colunas 0-based de cada linha de produção
+_CFG_LINHAS = {
+    'A': {'col_id': 5,  'col_cliente': 2,  'col_qtd': 3,  'col_status': 4,  'cor': '#1a5276', 'emoji': '🔵'},
+    'B': {'col_id': 10, 'col_cliente': 7,  'col_qtd': 8,  'col_status': 9,  'cor': '#1e8449', 'emoji': '🟢'},
+    'C': {'col_id': 16, 'col_cliente': 12, 'col_qtd': 13, 'col_status': 15, 'cor': '#784212', 'emoji': '🟠'},
 }
+_LINHA_INI = 7
+_LINHA_FIM = 26
 
-# Linha de início dos dados (0-based index no dataframe)
-_LINHA_DADOS_INI = 7   # linha 8 no Excel (cabeçalho em 7)
-_LINHA_DADOS_FIM = 24  # até linha 25 no Excel
 
+# ── Persistência do plano ─────────────────────────────────────────────────────
+
+def _salvar_plano(plano: dict):
+    """Salva o plano diário em JSON local e no GitHub."""
+    _PLANO_JSON.parent.mkdir(parents=True, exist_ok=True)
+    _PLANO_JSON.write_text(json.dumps(plano, ensure_ascii=False, indent=2), encoding='utf-8')
+    # Sincroniza com GitHub se disponível
+    try:
+        from modules.database import _modo_github, _github_cfg
+        if _modo_github():
+            import requests, base64
+            token, repo, branch, _ = _github_cfg()
+            url = f"https://api.github.com/repos/{repo}/contents/data/plano_diario.json"
+            headers = {"Authorization": f"token {token}"}
+            conteudo = base64.b64encode(
+                json.dumps(plano, ensure_ascii=False, indent=2).encode('utf-8')
+            ).decode()
+            r = requests.get(url, headers=headers, timeout=5)
+            sha = r.json().get("sha") if r.status_code == 200 else None
+            payload = {"message": "Atualiza plano diário", "content": conteudo, "branch": branch}
+            if sha:
+                payload["sha"] = sha
+            requests.put(url, json=payload, headers=headers, timeout=10)
+    except Exception:
+        pass
+
+
+def _carregar_plano() -> dict:
+    """Carrega o plano diário salvo (local ou GitHub)."""
+    # Tenta GitHub primeiro
+    try:
+        from modules.database import _modo_github, _github_cfg
+        if _modo_github():
+            import requests, base64
+            token, repo, branch, _ = _github_cfg()
+            url = f"https://api.github.com/repos/{repo}/contents/data/plano_diario.json?ref={branch}"
+            r = requests.get(url, headers={"Authorization": f"token {token}"}, timeout=5)
+            if r.status_code == 200:
+                conteudo = base64.b64decode(r.json()["content"]).decode("utf-8")
+                return json.loads(conteudo)
+    except Exception:
+        pass
+    # Fallback local
+    if _PLANO_JSON.exists():
+        try:
+            return json.loads(_PLANO_JSON.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+    return {}
+
+
+# ── Leitura da planilha ───────────────────────────────────────────────────────
 
 def _ler_planilha(arquivo) -> dict:
-    """
-    Lê a planilha de planejamento e retorna dict com:
-    {
-      'data':   '14/03/2026',
-      'linhas': {
-        'A': [{'idpedido': '356774', 'cliente': 'ETC', 'qtd': '4'}, ...],
-        'B': [...],
-        'C': [...],
-      }
-    }
-    """
     df = pd.read_excel(arquivo, sheet_name=0, header=None, dtype=str)
     df = df.fillna('')
 
-    # Extrai data do banner (linha 1, coluna 1)
-    data_str = ''
+    # Data no banner
+    data_str = datetime.date.today().strftime('%d/%m/%Y')
     try:
-        banner = str(df.iloc[1, 1])
         import re
+        banner = str(df.iloc[1, 1])
         m = re.search(r'(\d{2}/\d{2}/\d{4})', banner)
         if m:
             data_str = m.group(1)
@@ -52,26 +97,31 @@ def _ler_planilha(arquivo) -> dict:
 
     resultado = {'data': data_str, 'linhas': {}}
 
-    for linha_id, cfg in _LINHAS.items():
+    for linha_id, cfg in _CFG_LINHAS.items():
         itens = []
-        for row_idx in range(_LINHA_DADOS_INI, min(_LINHA_DADOS_FIM, len(df))):
+        for row_idx in range(_LINHA_INI, min(_LINHA_FIM, len(df))):
             try:
-                idpedido = str(df.iloc[row_idx, cfg['col_id']]).strip()
-                cliente  = str(df.iloc[row_idx, cfg['col_cliente']]).strip()
-                qtd      = str(df.iloc[row_idx, cfg['col_qtd']]).strip()
+                cliente = str(df.iloc[row_idx, cfg['col_cliente']]).strip()
+                qtd     = str(df.iloc[row_idx, cfg['col_qtd']]).strip()
 
-                # Ignora linhas sem IDPEDIDO e linhas de TOTAL
-                if not idpedido or idpedido in ('', 'nan', '0'):
+                # Ignora linhas vazias ou de totais
+                if not cliente or cliente in ('', 'nan'):
                     continue
-                if 'TOTAL' in cliente.upper() or 'TOTAL' in idpedido.upper():
+                if any(p in cliente.upper() for p in ('TOTAL', 'PROGRAMADO')):
                     continue
-                # Ignora se não for numérico
-                if not idpedido.strip().isdigit():
-                    continue
+
+                # IDPEDIDO — pode estar vazio
+                idpedido = ''
+                try:
+                    val = str(df.iloc[row_idx, cfg['col_id']]).strip()
+                    if val and val not in ('nan', '0', ''):
+                        idpedido = val
+                except Exception:
+                    pass
 
                 itens.append({
                     'idpedido': idpedido,
-                    'cliente':  cliente if cliente not in ('', 'nan') else '—',
+                    'cliente':  cliente,
                     'qtd':      qtd if qtd not in ('', 'nan') else '—',
                 })
             except Exception:
@@ -81,142 +131,248 @@ def _ler_planilha(arquivo) -> dict:
     return resultado
 
 
+# ── Cruzamento com banco ──────────────────────────────────────────────────────
+
+def _buscar_os(idpedido: str, cliente: str, df_banco: pd.DataFrame) -> pd.DataFrame:
+    """
+    Busca OS pelo IDPEDIDO se disponível, senão pelo nome do cliente.
+    """
+    if idpedido and idpedido.strip():
+        # Busca exata por IDPEDIDOPNEU
+        resultado = df_banco[df_banco['IDPEDIDOPNEU'] == idpedido.strip()]
+        if not resultado.empty:
+            return resultado
+
+    # Fallback: busca por cliente (match parcial, case insensitive)
+    if cliente and cliente.strip():
+        cliente_upper = cliente.strip().upper()
+        mask = df_banco['CLIENTE'].str.upper().str.contains(cliente_upper, na=False, regex=False)
+        # Se o cliente tiver mais de uma palavra, tenta com a primeira
+        if mask.sum() == 0 and ' ' in cliente_upper:
+            primeira = cliente_upper.split()[0]
+            if len(primeira) > 3:
+                mask = df_banco['CLIENTE'].str.upper().str.contains(primeira, na=False, regex=False)
+        return df_banco[mask]
+
+    return pd.DataFrame()
+
+
+# ── Tela principal ────────────────────────────────────────────────────────────
+
 def tela_producao_diaria():
     st.title("🏗️ Pneus a Produzir")
-    st.write("Carregue a planilha de programação diária para visualizar as OS de cada linha de produção.")
 
     df_banco = st.session_state.bd_pneus
 
-    # ── Upload da planilha ────────────────────────────────────────────────────
+    # ── Abas: Importar / Ver plano salvo ─────────────────────────────────────
+    aba1, aba2 = st.tabs(["📂 Importar Planilha", "📋 Plano Salvo"])
+
+    with aba1:
+        _aba_importar(df_banco)
+
+    with aba2:
+        _aba_plano_salvo(df_banco)
+
+
+def _aba_importar(df_banco: pd.DataFrame):
+    st.subheader("Carregar Programação Diária")
+    st.info(
+        "Carregue a planilha. O sistema vincula cada cliente com as OS do banco.\n\n"
+        "**Com IDPEDIDO preenchido (cols F/K/Q):** vinculação exata.\n"
+        "**Sem IDPEDIDO:** vinculação automática pelo nome do cliente."
+    )
+
     arquivo = st.file_uploader(
-        "📂 Selecione a planilha PLANEJAMENTO_DIARIO_PCP.xlsx:",
+        "📂 Selecione PLANEJAMENTO_DIARIO_PCP.xlsx:",
         type=["xlsx", "xls"],
         key="uploader_planejamento"
     )
 
     if not arquivo:
-        # Dica visual
-        st.info(
-            "👆 Carregue a planilha de programação diária com os **IDPEDIDO** "
-            "preenchidos nas colunas **F** (Linha A), **K** (Linha B) e **Q** (Linha C)."
-        )
         _exibir_instrucoes()
         return
 
-    # ── Lê a planilha ────────────────────────────────────────────────────────
     try:
         plano = _ler_planilha(arquivo)
     except Exception as e:
-        st.error(f"❌ Erro ao ler a planilha: {e}")
+        st.error(f"❌ Erro ao ler planilha: {e}")
         return
 
-    data_plano = plano['data'] or datetime.date.today().strftime('%d/%m/%Y')
+    data_plano = plano['data']
+    total_itens = sum(len(v) for v in plano['linhas'].values())
 
     st.markdown(
-        f"""
-        <div style="background:#003366;border-radius:8px;padding:12px 20px;margin-bottom:16px;">
-          <h3 style="color:#fff;margin:0;">📋 Programação de Produção — {data_plano}</h3>
-        </div>
-        """,
-        unsafe_allow_html=True
+        f"<div style='background:#003366;border-radius:8px;padding:10px 18px;'>"
+        f"<h3 style='color:#fff;margin:0;'>📋 Programação — {data_plano} | {total_itens} clientes</h3>"
+        f"</div>", unsafe_allow_html=True
     )
+    st.markdown("")
 
-    # ── Resumo geral ──────────────────────────────────────────────────────────
-    total_pedidos = sum(len(v) for v in plano['linhas'].values())
-    total_os = 0
+    # Monta resumo enriquecido com OS do banco
+    plano_completo = {'data': data_plano, 'linhas': {}}
+    resumo_geral = {'aguard': 0, 'prod': 0, 'exped': 0, 'sem_os': 0}
 
-    # ── Processa cada linha ───────────────────────────────────────────────────
-    for linha_id, cfg in _LINHAS.items():
+    for linha_id, cfg in _CFG_LINHAS.items():
         itens = plano['linhas'].get(linha_id, [])
         if not itens:
             continue
 
-        cor  = cfg['cor']
+        cor   = cfg['cor']
         emoji = cfg['emoji']
-
-        # Para cada IDPEDIDO, busca OS no banco
-        todos_ids = [item['idpedido'] for item in itens]
-        os_da_linha = df_banco[df_banco['IDPEDIDOPNEU'].isin(todos_ids)].copy()
-        total_os += len(os_da_linha)
+        itens_enriquecidos = []
+        total_os_linha = 0
 
         st.markdown(
-            f"""
-            <div style="background:{cor};border-radius:6px;padding:10px 16px;margin:12px 0 4px 0;">
-              <h4 style="color:#fff;margin:0;">
-                {emoji} LINHA {linha_id} — {len(itens)} pedido(s) planejado(s) |
-                {len(os_da_linha)} OS no sistema
-              </h4>
-            </div>
-            """,
-            unsafe_allow_html=True
+            f"<div style='background:{cor};border-radius:6px;padding:8px 16px;margin:10px 0 4px;'>"
+            f"<h4 style='color:#fff;margin:0;'>{emoji} LINHA {linha_id} — {len(itens)} cliente(s)</h4>"
+            f"</div>", unsafe_allow_html=True
         )
 
-        # Tabela de OS agrupadas por IDPEDIDO
         for item in itens:
-            idp = item['idpedido']
-            os_pedido = os_da_linha[os_da_linha['IDPEDIDOPNEU'] == idp].copy()
+            os_cliente = _buscar_os(item['idpedido'], item['cliente'], df_banco)
+            total_os_linha += len(os_cliente)
 
-            aguard = len(os_pedido[os_pedido['STATUS'] == 'Aguardando'])
-            prod   = len(os_pedido[os_pedido['STATUS'] == 'Em Produção'])
-            exped  = len(os_pedido[os_pedido['STATUS'] == 'Expedido'])
+            aguard = len(os_cliente[os_cliente['STATUS'] == 'Aguardando'])
+            prod   = len(os_cliente[os_cliente['STATUS'] == 'Em Produção'])
+            exped  = len(os_cliente[os_cliente['STATUS'] == 'Expedido'])
 
+            resumo_geral['aguard'] += aguard
+            resumo_geral['prod']   += prod
+            resumo_geral['exped']  += exped
+            if os_cliente.empty:
+                resumo_geral['sem_os'] += 1
+
+            # Salva para persistência
+            itens_enriquecidos.append({
+                **item,
+                'idpedidos_encontrados': os_cliente['IDPEDIDOPNEU'].unique().tolist() if not os_cliente.empty else [],
+                'nrordens': os_cliente['NRORDEM'].tolist() if not os_cliente.empty else [],
+            })
+
+            modo = '✅ IDPEDIDO' if item['idpedido'] else '🔍 Cliente'
             label = (
-                f"IDPEDIDO **{idp}** — {item['cliente']} "
-                f"| Planejado: {item['qtd']} pneus "
-                f"| 🟡 {aguard} Aguard. 🔵 {prod} Prod. 🟢 {exped} Exped."
+                f"**{item['cliente']}** | Qtd: {item['qtd']} | "
+                f"🟡 {aguard} 🔵 {prod} 🟢 {exped} | Busca: {modo}"
             )
 
-            if os_pedido.empty:
-                with st.expander(f"⚠️ IDPEDIDO {idp} — {item['cliente']} | Não encontrado no banco"):
-                    st.warning(
-                        f"IDPEDIDO **{idp}** não encontrado. "
-                        f"Importe o CSV correspondente no Painel PPCP."
-                    )
+            if os_cliente.empty:
+                with st.expander(f"⚠️ {item['cliente']} — Não encontrado"):
+                    st.warning("Cliente não encontrado no banco. Verifique o nome ou importe o CSV.")
             else:
                 with st.expander(label, expanded=(aguard > 0)):
-                    exibir = os_pedido[[
-                        'NRORDEM', 'NRSERIE', 'DESENHO', 'STATUS',
-                        'LOCAL_PALLET', 'DATA_ENTRADA', 'DATA_SAIDA'
-                    ]].copy()
-                    exibir = exibir.rename(columns={
+                    exibir = os_cliente[[
+                        'NRORDEM', 'IDPEDIDOPNEU', 'NRSERIE', 'DESENHO',
+                        'STATUS', 'LOCAL_PALLET', 'DATA_ENTRADA', 'DATA_SAIDA'
+                    ]].copy().rename(columns={
                         'LOCAL_PALLET': 'Pallet',
                         'DATA_ENTRADA': 'Data Coleta',
                         'DATA_SAIDA':   'Entrega Prev.',
                     })
                     st.dataframe(
-                        exibir.style.apply(_colorir, axis=1),
-                        use_container_width=True,
-                        hide_index=True
+                        exibir.style.apply(_colorir_status, axis=1),
+                        use_container_width=True, hide_index=True
                     )
 
-                    # Botão de entrada em produção para os aguardando
                     if aguard > 0:
                         if st.button(
                             f"▶️ Enviar {aguard} pneu(s) para Produção",
-                            key=f"btn_prod_{linha_id}_{idp}",
+                            key=f"prod_{linha_id}_{item['cliente']}",
                             type="primary"
                         ):
-                            mask = (
-                                (df_banco['IDPEDIDOPNEU'] == idp) &
-                                (df_banco['STATUS'] == 'Aguardando')
-                            )
                             from modules.database import salvar_dados
-                            st.session_state.bd_pneus.loc[mask, 'STATUS'] = 'Em Produção'
-                            st.session_state.bd_pneus.loc[mask, 'DATA_ENTRADA'] = \
-                                datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                            ids_busca = os_cliente.index[os_cliente['STATUS'] == 'Aguardando']
+                            agora = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                            st.session_state.bd_pneus.loc[ids_busca, 'STATUS'] = 'Em Produção'
+                            st.session_state.bd_pneus.loc[ids_busca, 'DATA_ENTRADA'] = agora
                             salvar_dados(st.session_state.bd_pneus)
-                            st.success(f"✅ {aguard} pneu(s) do pedido {idp} enviados para produção!")
+                            st.success(f"✅ {aguard} pneu(s) de {item['cliente']} enviados para produção!")
                             st.rerun()
 
-    # ── Resumo final ──────────────────────────────────────────────────────────
+        plano_completo['linhas'][linha_id] = itens_enriquecidos
+
+    # ── Salva o plano ─────────────────────────────────────────────────────────
     st.markdown("---")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Pedidos no plano", total_pedidos)
-    c2.metric("OS encontradas", total_os)
-    c3.metric("Data do plano", data_plano)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("🟡 Aguardando", resumo_geral['aguard'])
+    c2.metric("🔵 Em Produção", resumo_geral['prod'])
+    c3.metric("🟢 Expedidos",  resumo_geral['exped'])
+    c4.metric("⚠️ Sem OS",     resumo_geral['sem_os'])
+
+    if st.button("💾 Salvar este plano", type="primary", key="btn_salvar_plano"):
+        _salvar_plano(plano_completo)
+        st.success(f"✅ Plano de {data_plano} salvo com sucesso!")
+        st.rerun()
 
 
-def _colorir(row: pd.Series):
+def _aba_plano_salvo(df_banco: pd.DataFrame):
+    st.subheader("Plano Diário Salvo")
+    plano = _carregar_plano()
+
+    if not plano:
+        st.info("Nenhum plano salvo ainda. Importe a planilha na aba ao lado e clique em 💾 Salvar.")
+        return
+
+    data_plano = plano.get('data', '—')
+    st.markdown(
+        f"<div style='background:#003366;border-radius:8px;padding:10px 18px;'>"
+        f"<h3 style='color:#fff;margin:0;'>📋 Plano salvo — {data_plano}</h3>"
+        f"</div>", unsafe_allow_html=True
+    )
+    st.markdown("")
+
+    for linha_id, cfg in _CFG_LINHAS.items():
+        itens = plano.get('linhas', {}).get(linha_id, [])
+        if not itens:
+            continue
+
+        st.markdown(
+            f"<div style='background:{cfg['cor']};border-radius:6px;padding:8px 16px;margin:10px 0 4px;'>"
+            f"<h4 style='color:#fff;margin:0;'>{cfg['emoji']} LINHA {linha_id} — {len(itens)} cliente(s)</h4>"
+            f"</div>", unsafe_allow_html=True
+        )
+
+        for item in itens:
+            # Recarrega OS do banco em tempo real
+            os_cliente = _buscar_os(item.get('idpedido',''), item.get('cliente',''), df_banco)
+            aguard = len(os_cliente[os_cliente['STATUS'] == 'Aguardando']) if not os_cliente.empty else 0
+            prod   = len(os_cliente[os_cliente['STATUS'] == 'Em Produção']) if not os_cliente.empty else 0
+            exped  = len(os_cliente[os_cliente['STATUS'] == 'Expedido'])    if not os_cliente.empty else 0
+
+            label = (
+                f"**{item.get('cliente','—')}** | Qtd: {item.get('qtd','—')} | "
+                f"🟡 {aguard} 🔵 {prod} 🟢 {exped}"
+            )
+
+            with st.expander(label, expanded=(aguard > 0)):
+                if os_cliente.empty:
+                    st.warning("OS não encontrada no banco.")
+                else:
+                    exibir = os_cliente[[
+                        'NRORDEM', 'IDPEDIDOPNEU', 'NRSERIE', 'DESENHO',
+                        'STATUS', 'LOCAL_PALLET', 'DATA_ENTRADA'
+                    ]].copy().rename(columns={'LOCAL_PALLET': 'Pallet', 'DATA_ENTRADA': 'Data Coleta'})
+                    st.dataframe(
+                        exibir.style.apply(_colorir_status, axis=1),
+                        use_container_width=True, hide_index=True
+                    )
+
+                    if aguard > 0:
+                        if st.button(
+                            f"▶️ Enviar {aguard} pneu(s) para Produção",
+                            key=f"plano_{linha_id}_{item.get('cliente','')}",
+                            type="primary"
+                        ):
+                            from modules.database import salvar_dados
+                            ids_busca = os_cliente.index[os_cliente['STATUS'] == 'Aguardando']
+                            agora = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                            st.session_state.bd_pneus.loc[ids_busca, 'STATUS'] = 'Em Produção'
+                            st.session_state.bd_pneus.loc[ids_busca, 'DATA_ENTRADA'] = agora
+                            salvar_dados(st.session_state.bd_pneus)
+                            st.success(f"✅ {aguard} pneu(s) enviados para produção!")
+                            st.rerun()
+
+
+def _colorir_status(row: pd.Series):
     cores = {
         'Aguardando':  'background-color:#fff3cd;color:#856404',
         'Em Produção': 'background-color:#cce5ff;color:#004085',
@@ -228,17 +384,20 @@ def _colorir(row: pd.Series):
 def _exibir_instrucoes():
     with st.expander("📖 Como usar", expanded=True):
         st.markdown("""
-        **Passo a passo:**
+        **Com IDPEDIDO na planilha (recomendado):**
+        1. Abra `PLANEJAMENTO_DIARIO_PCP.xlsx`
+        2. Preencha a coluna **F** com IDPEDIDO da **Linha A**
+        3. Preencha a coluna **K** com IDPEDIDO da **Linha B**
+        4. Preencha a coluna **Q** com IDPEDIDO da **Linha C**
 
-        1. Abra a planilha `PLANEJAMENTO_DIARIO_PCP.xlsx`
-        2. Preencha a coluna **F** com os IDPEDIDO da **Linha A**
-        3. Preencha a coluna **K** com os IDPEDIDO da **Linha B**
-        4. Preencha a coluna **Q** com os IDPEDIDO da **Linha C**
-        5. Salve e carregue aqui com o botão acima
+        **Sem IDPEDIDO:**
+        - O sistema encontra as OS automaticamente pelo **nome do cliente**
 
-        **O sistema irá:**
-        - Buscar as OS de cada IDPEDIDO no banco de dados
-        - Mostrar status de cada pneu (Aguardando / Em Produção / Expedido)
-        - Indicar qual pallet cada pneu está alocado
-        - Permitir enviar lotes inteiros para produção com 1 clique
+        **Depois de carregar:**
+        - Veja as OS de cada cliente por linha de produção
+        - Clique **"▶️ Enviar para Produção"** para lançar em lote
+        - Clique **"💾 Salvar este plano"** para manter o plano disponível
+
+        **Aba "Plano Salvo":**
+        - Mostra o último plano importado com status atualizado em tempo real
         """)
