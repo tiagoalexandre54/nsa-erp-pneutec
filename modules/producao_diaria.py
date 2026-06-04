@@ -5,10 +5,61 @@ Integração com a Planilha Oficial de PPCP e Trava Poka-Yoke por IDPEDIDO.
 import streamlit as st
 import pandas as pd
 import datetime
+import json
 from pathlib import Path
 
 _BASE_DIR   = Path(__file__).resolve().parent.parent
 _PLANO_JSON = _BASE_DIR / "data" / "plano_diario.json"
+
+
+# ── Persistência do Plano Diário no GitHub ────────────────────────────────────
+def _salvar_plano(plano: dict) -> None:
+    """Salva o plano diário como JSON local e no GitHub."""
+    conteudo_str = json.dumps(plano, ensure_ascii=False, indent=2)
+    try:
+        _PLANO_JSON.parent.mkdir(parents=True, exist_ok=True)
+        _PLANO_JSON.write_text(conteudo_str, encoding="utf-8")
+    except Exception:
+        pass
+    try:
+        from modules.database import _modo_github, _github_cfg
+        if not _modo_github():
+            return
+        import requests, base64
+        token, repo, branch, _ = _github_cfg()
+        url = f"https://api.github.com/repos/{repo}/contents/data/plano_diario.json"
+        headers = {"Authorization": f"token {token}"}
+        conteudo_b64 = base64.b64encode(conteudo_str.encode("utf-8")).decode()
+        r = requests.get(url, headers=headers, timeout=5)
+        sha = r.json().get("sha") if r.status_code == 200 else None
+        payload = {"message": "Atualiza plano diario", "content": conteudo_b64, "branch": branch}
+        if sha:
+            payload["sha"] = sha
+        requests.put(url, json=payload, headers=headers, timeout=10)
+    except Exception:
+        pass
+
+
+def _carregar_plano() -> dict | None:
+    """Carrega o plano diário salvo (GitHub → local → None)."""
+    try:
+        from modules.database import _modo_github, _github_cfg
+        if _modo_github():
+            import requests, base64
+            token, repo, branch, _ = _github_cfg()
+            url = f"https://api.github.com/repos/{repo}/contents/data/plano_diario.json?ref={branch}"
+            r = requests.get(url, headers={"Authorization": f"token {token}"}, timeout=5)
+            if r.status_code == 200:
+                conteudo = base64.b64decode(r.json()["content"]).decode("utf-8")
+                return json.loads(conteudo)
+    except Exception:
+        pass
+    if _PLANO_JSON.exists():
+        try:
+            return json.loads(_PLANO_JSON.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return None
 
 # ── Mapeamento EXATO da Planilha Oficial ─────────────────────────────────────
 # Linha A: Colunas 1, 2, 4 (B, C, E no Excel) | Cap: 150 + 10% = 165
@@ -218,20 +269,31 @@ def _aba_bipe(df: pd.DataFrame):
 # ── 2. Importar Planilha de Programação e Trânsito ───────────────────────────
 def _aba_importar(df_banco: pd.DataFrame):
     st.subheader("Carregar Programação Diária")
+
     arquivo = st.file_uploader(
         "📂 Selecione sua planilha PLANEJAMENTO_DIARIO:",
         type=["xlsx", "xls", "csv"],
         key="uploader_planejamento",
     )
 
-    if not arquivo:
-        return
+    plano = None
 
-    try:
-        plano = _ler_planilha(arquivo)
-    except Exception as e:
-        st.error(f"❌ Erro ao ler planilha: {e}")
-        return
+    if arquivo:
+        try:
+            plano = _ler_planilha(arquivo)
+            _salvar_plano(plano)
+            st.success("✅ Programação salva! Será carregada automaticamente na próxima vez.")
+        except Exception as e:
+            st.error(f"❌ Erro ao ler planilha: {e}")
+            return
+    else:
+        plano = _carregar_plano()
+        if plano:
+            st.info(f"📂 Exibindo programação salva de **{plano.get('data', '—')}**. "
+                    f"Faça upload de uma nova planilha para atualizar.")
+        else:
+            st.warning("Nenhuma programação salva. Faça upload da planilha PLANEJAMENTO_DIARIO.")
+            return
 
     st.markdown(f"**Data da Programação:** {plano['data']}")
     st.markdown("---")
