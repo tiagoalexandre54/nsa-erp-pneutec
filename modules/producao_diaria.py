@@ -394,11 +394,25 @@ def _aba_bipe(df: pd.DataFrame):
         else:
             st.warning(f"⚠️ A OS {codigo} já consta como **{status_atual}**.")
 
-    # Bipou um IDPEDIDO (ativa trava global)
+    # Bipou um IDPEDIDO (inicia a coleta: reseta para Aguardando + trava)
     elif idx_idpedido:
         if id_travado and id_travado != codigo:
             st.error("🔒 Finalize a coleta atual antes de iniciar um novo IDPEDIDO.")
+        elif id_travado == codigo:
+            st.info("ℹ️ Esta coleta já está ativa. Bipe as OS dos pneus.")
+            st.session_state.prod_bipe_key += 1
+            st.rerun()
         else:
+            # Inicia a coleta: TODO pneu deste IDPEDIDO volta a "Aguardando"
+            # (exceto os já Expedidos), mesmo que o ERP tenha mandado como
+            # "Em Produção" — pois aqui o pneu só entra na linha ao ser BIPADO.
+            bd = st.session_state.bd_pneus
+            mask = (
+                (bd['IDPEDIDOPNEU'].astype(str).str.strip() == codigo) &
+                (bd['STATUS'] != 'Expedido')
+            )
+            bd.loc[mask, 'STATUS'] = 'Aguardando'
+            salvar_dados(bd)
             set_trava_global(codigo)
             st.session_state.prod_bipe_key += 1
             st.rerun()
