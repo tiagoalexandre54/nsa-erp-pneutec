@@ -101,21 +101,34 @@ def tela_painel_pcp():
 
                 else:
                     # ── Modo SUBSTITUIR: df_novo vira o novo banco, ──────────
-                    # mas preserva STATUS/DATA de OS que já estão Em Produção
-                    # ou Expedidas (Poka-Yoke: não volta para Aguardando).
+                    # mas PRESERVA o progresso já feito no sistema:
+                    #  • Em Produção / Expedido → mantém status + datas + pallet
+                    #  • Aguardando mas já alocado no pátio → mantém pallet +
+                    #    data de chegada (não perde o recebimento ao re-importar)
                     df_atual = st.session_state.bd_pneus
-                    protegidos = 0
+                    protegidos = 0       # já bipados (Em Produção/Expedido)
+                    patio_mantidos = 0   # alocados no pátio aguardando
                     for i, row in df_novo.iterrows():
                         ordem = row['NRORDEM']
                         os_existente = df_atual[df_atual['NRORDEM'] == ordem]
-                        if not os_existente.empty:
-                            status_banco = os_existente.iloc[0]['STATUS']
-                            if status_banco in ['Em Produção', 'Expedido']:
-                                df_novo.at[i, 'STATUS']       = status_banco
-                                df_novo.at[i, 'DATA_ENTRADA'] = os_existente.iloc[0]['DATA_ENTRADA']
-                                df_novo.at[i, 'DATA_SAIDA']   = os_existente.iloc[0]['DATA_SAIDA']
-                                df_novo.at[i, 'LOCAL_PALLET'] = os_existente.iloc[0]['LOCAL_PALLET']
-                                protegidos += 1
+                        if os_existente.empty:
+                            continue
+                        ex = os_existente.iloc[0]
+                        status_banco = ex['STATUS']
+                        pallet_banco = str(ex['LOCAL_PALLET']).strip()
+
+                        if status_banco in ['Em Produção', 'Expedido']:
+                            df_novo.at[i, 'STATUS']       = status_banco
+                            df_novo.at[i, 'DATA_ENTRADA'] = ex['DATA_ENTRADA']
+                            df_novo.at[i, 'DATA_SAIDA']   = ex['DATA_SAIDA']
+                            df_novo.at[i, 'LOCAL_PALLET'] = ex['LOCAL_PALLET']
+                            protegidos += 1
+                        elif pallet_banco:
+                            # Aguardando, mas já recebido no pátio: mantém a
+                            # alocação e a data de chegada.
+                            df_novo.at[i, 'LOCAL_PALLET'] = ex['LOCAL_PALLET']
+                            df_novo.at[i, 'DATA_ENTRADA'] = ex['DATA_ENTRADA']
+                            patio_mantidos += 1
 
                     novas_no_arquivo   = len(df_novo[~df_novo['NRORDEM'].isin(df_atual['NRORDEM'])])
                     removidas_do_banco = len(df_atual[~df_atual['NRORDEM'].isin(df_novo['NRORDEM'])])
@@ -125,7 +138,8 @@ def tela_painel_pcp():
                         f"• **{len(df_novo)}** OS no arquivo novo  \n"
                         f"• **{novas_no_arquivo}** OS serão adicionadas  \n"
                         f"• **{removidas_do_banco}** OS do banco atual não estão no arquivo (serão removidas)  \n"
-                        f"• **{protegidos}** OS protegidas (Em Produção / Expedido — status preservado)"
+                        f"• **{protegidos}** OS protegidas (Em Produção / Expedido)  \n"
+                        f"• **{patio_mantidos}** OS aguardando com pallet preservado (recebimento)"
                     )
 
                     if st.button(
@@ -138,7 +152,7 @@ def tela_painel_pcp():
                         st.session_state.ultimo_arquivo_importado = arquivo_id
                         st.success(
                             f"✅ Banco substituído! {len(df_novo)} OS carregadas. "
-                            f"{protegidos} OS tiveram status preservado."
+                            f"{protegidos} com status preservado, {patio_mantidos} com pallet mantido."
                         )
                         st.rerun()
 
