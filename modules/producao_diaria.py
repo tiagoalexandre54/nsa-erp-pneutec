@@ -267,7 +267,7 @@ def _aba_bipe(df: pd.DataFrame):
     id_travado = ler_trava_global()
 
     if id_travado:
-        os_trava  = df[df['IDPEDIDOPNEU'] == id_travado]
+        os_trava  = df[df['IDPEDIDOPNEU'].astype(str).str.strip() == str(id_travado).strip()]
         pendentes = os_trava[os_trava['STATUS'] == 'Aguardando']
 
         if not os_trava.empty:
@@ -276,30 +276,54 @@ def _aba_bipe(df: pd.DataFrame):
             na_linha   = total_id - len(pendentes)
 
             st.error(
-                f"🔒 **TRAVA ATIVA!** A linha está bloqueada no IDPEDIDO "
-                f"**{id_travado}** ({cliente_tr})."
+                f"🔒 **TRAVA ATIVA!** Coleta **IDPEDIDO {id_travado}** — {cliente_tr}."
             )
-            st.progress(na_linha / total_id if total_id > 0 else 0)
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("📦 Total da coleta", total_id)
+            c2.metric("✅ Já na linha", na_linha)
+            c3.metric("⏳ Faltam bipar", len(pendentes))
+            st.progress(
+                na_linha / total_id if total_id > 0 else 0,
+                text=f"{na_linha} de {total_id} pneus bipados",
+            )
+
+            # Puxa TODA a coleta do CSV e mostra com situação por pneu
+            vis = os_trava.copy()
+            vis['Situação'] = vis['STATUS'].map(
+                lambda s: '⏳ Falta bipar' if str(s).strip() == 'Aguardando' else '✅ Na linha'
+            )
+            vis['_ord'] = (vis['STATUS'] != 'Aguardando').astype(int)  # pendentes no topo
+            vis = vis.sort_values('_ord')
 
             if not pendentes.empty:
                 st.warning(
                     f"⚠️ **FALTAM {len(pendentes)} PNEUS** para liberar o sistema. "
-                    f"Procure as seguintes OS:"
-                )
-                st.dataframe(
-                    pendentes[['NRORDEM', 'NRSERIE', 'DESENHO', 'LOCAL_PALLET']],
-                    hide_index=True,
-                    use_container_width=True,
+                    f"Procure as OS marcadas com ⏳:"
                 )
             else:
                 st.success("🎉 **TODOS OS PNEUS DA COLETA ENTRARAM!** O sistema está liberado.")
+
+            st.dataframe(
+                vis[['NRORDEM', 'NRSERIE', 'DESENHO', 'LOCAL_PALLET', 'Situação']],
+                hide_index=True,
+                use_container_width=True,
+            )
+
+            if pendentes.empty:
                 if st.button("🔓 Iniciar Próxima Coleta", type="primary"):
                     set_trava_global(None)
                     st.rerun()
                 return
         else:
-            set_trava_global(None)
-            st.rerun()
+            st.warning(
+                f"⚠️ O IDPEDIDO **{id_travado}** não tem nenhuma OS no banco (CSV do "
+                f"Painel PPCP). Importe o CSV ou libere a trava."
+            )
+            if st.button("🔓 Liberar trava", type="primary"):
+                set_trava_global(None)
+                st.rerun()
+            return
     else:
         st.info(
             "Digite ou Bipe o **IDPEDIDO** para puxar toda a coleta "
