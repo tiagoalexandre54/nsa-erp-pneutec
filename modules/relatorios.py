@@ -82,13 +82,47 @@ def tela_relatorios():
         key="rel_producao"
     )
 
-    # ── Relatório 3: Expedidos ───────────────────────────────────────────────
+    # ── Relatório 3: Expedidos (com Lead Time) ───────────────────────────────
     df_exped = df_filtrado[df_filtrado['STATUS'] == 'Expedido'].copy()
+
+    if not df_exped.empty:
+        # 1. Converte datas tentando formatos explícitos em ordem (sem dayfirst,
+        #    que corromperia datas ISO). Cobre o padrão atual e datas antigas.
+        def _to_dt(serie):
+            dt = pd.to_datetime(serie, format="%d/%m/%Y %H:%M:%S", errors='coerce')
+            for fmt in ("%d/%m/%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                falta = dt.isna()
+                if not falta.any():
+                    break
+                dt.loc[falta] = pd.to_datetime(serie[falta], format=fmt, errors='coerce')
+            return dt
+
+        entrada_dt = _to_dt(df_exped['DATA_ENTRADA'])
+        saida_dt   = _to_dt(df_exped['DATA_SAIDA'])
+
+        # 2. Lead time em dias corridos (1 casa decimal)
+        df_exped['LEAD_TIME_DIAS'] = (
+            (saida_dt - entrada_dt).dt.total_seconds() / (24 * 3600)
+        ).round(1)
+
+        # 3. Média global do período filtrado
+        lead_time_medio = df_exped['LEAD_TIME_DIAS'].mean()
+    else:
+        lead_time_medio = 0.0
+
+    st.subheader("🚚 Expedidos e Performance de Entrega")
+    colA, colB = st.columns(2)
+    colA.metric("Pneus Expedidos", len(df_exped))
+    colB.metric(
+        "Lead Time Médio (Dias)",
+        f"{lead_time_medio:.1f}" if not pd.isna(lead_time_medio) else "0.0",
+    )
+
     _card_relatorio(
-        titulo="🚚 Expedidos",
-        descricao="OS que já saíram para entrega.",
+        titulo="Detalhes da Expedição",
+        descricao="OS que já saíram para entrega, incluindo o tempo de ciclo (Lead Time).",
         df=df_exped,
-        nome_arquivo="relatorio_expedidos",
+        nome_arquivo="relatorio_expedidos_leadtime",
         key="rel_expedidos"
     )
 
