@@ -504,18 +504,81 @@ def _aba_importar(df_banco: pd.DataFrame):
         st.markdown("")
 
 
-# ── 3. Status por Cliente ─────────────────────────────────────────────────────
+# ── 3. Status por Cliente (conforme a Programação do dia) ────────────────────
 def _aba_clientes_em_linha(df_banco: pd.DataFrame):
-    st.subheader("🏭 Status por Cliente")
-    em_linha = df_banco[df_banco['STATUS'] == 'Em Produção']
+    st.subheader("🏭 Status por Cliente (conforme Programação)")
 
-    if em_linha.empty:
-        st.info("Nenhum pneu em produção nas máquinas no momento.")
+    plano = _carregar_plano()
+    if not plano:
+        st.info(
+            "Nenhuma programação carregada. Importe a planilha na aba "
+            "**📂 2. Importar & Pneus em Trânsito** para acompanhar o status."
+        )
         return
 
-    resumo = (
-        em_linha.groupby(['CLIENTE', 'IDPEDIDOPNEU'])
-        .size()
-        .reset_index(name='QTD_NA_LINHA')
-    )
-    st.dataframe(resumo, use_container_width=True, hide_index=True)
+    st.caption(f"📅 Programação de **{plano.get('data', '—')}**")
+
+    tot_prog = tot_aguard = tot_prod = tot_exped = 0
+
+    for linha_id, cfg in _CFG_LINHAS.items():
+        itens = plano['linhas'].get(linha_id, [])
+        if not itens:
+            continue
+
+        linhas = []
+        l_prog = l_aguard = l_prod = l_exped = 0
+        for item in itens:
+            os_cli = _buscar_os(item.get('idpedido', ''), item['cliente'], df_banco)
+            prog   = int(item['qtd']) if str(item['qtd']).isdigit() else 0
+
+            if os_cli.empty or 'STATUS' not in os_cli.columns:
+                aguard = prod = exped = 0
+            else:
+                aguard = len(os_cli[os_cli['STATUS'] == 'Aguardando'])
+                prod   = len(os_cli[os_cli['STATUS'] == 'Em Produção'])
+                exped  = len(os_cli[os_cli['STATUS'] == 'Expedido'])
+
+            no_banco = aguard + prod + exped
+
+            if no_banco == 0:
+                situ = '❌ Sem pneus no banco'
+            elif aguard == 0 and prod == 0:
+                situ = '✅ Concluído (expedido)'
+            elif prod > 0 and aguard == 0:
+                situ = '🔄 Todos na linha'
+            elif prod > 0:
+                situ = '🔄 Em produção'
+            else:
+                situ = '⏳ Aguardando entrada'
+
+            linhas.append({
+                'IDPEDIDO':     item.get('idpedido') or '(sem ID)',
+                'Cliente':      item['cliente'],
+                'Programado':   prog,
+                'Aguardando':   aguard,
+                'Em Produção':  prod,
+                'Expedido':     exped,
+                'Situação':     situ,
+            })
+            l_prog += prog; l_aguard += aguard; l_prod += prod; l_exped += exped
+
+        tot_prog += l_prog; tot_aguard += l_aguard; tot_prod += l_prod; tot_exped += l_exped
+
+        st.markdown(
+            f"<div style='background:{cfg['cor']};border-radius:6px;"
+            f"padding:8px 16px;margin:14px 0 4px;'>"
+            f"<h4 style='color:#fff;margin:0;'>"
+            f"{cfg['emoji']} LINHA {linha_id} — {l_prog} programados | "
+            f"⏳ {l_aguard} aguard. | 🔄 {l_prod} produção | ✅ {l_exped} exped."
+            f"</h4></div>",
+            unsafe_allow_html=True,
+        )
+        st.dataframe(pd.DataFrame(linhas), hide_index=True, use_container_width=True)
+
+    # Resumo geral
+    st.markdown("---")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("📋 Programado", tot_prog)
+    c2.metric("⏳ Aguardando", tot_aguard)
+    c3.metric("🔄 Em Produção", tot_prod)
+    c4.metric("✅ Expedido", tot_exped)
