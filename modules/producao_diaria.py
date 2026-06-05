@@ -164,12 +164,22 @@ def _ler_planilha(arquivo) -> dict:
     return resultado
 
 
+def _norm_id(v) -> str:
+    """Normaliza um IDPEDIDO: '364182.0' → '364182', remove espaços."""
+    s = str(v).strip()
+    if s.replace('.', '', 1).isdigit():
+        s = s.split('.')[0]
+    return s
+
+
 def _buscar_os(idpedido: str, cliente: str, df_banco: pd.DataFrame) -> pd.DataFrame:
     """Busca os pneus do cliente, priorizando o IDPEDIDO se existir.
     Fallback: nome da planilha aparece como palavra no nome do banco
     (com acentos normalizados)."""
-    if idpedido:
-        res = df_banco[df_banco['IDPEDIDOPNEU'].astype(str).str.strip() == str(idpedido).strip()]
+    id_alvo = _norm_id(idpedido) if idpedido else ''
+    if id_alvo:
+        ids_banco = df_banco['IDPEDIDOPNEU'].apply(_norm_id)
+        res = df_banco[ids_banco == id_alvo]
         if not res.empty:
             return res
     if not cliente:
@@ -410,14 +420,40 @@ def _aba_importar(df_banco: pd.DataFrame):
                 f"(Programado: {total_linha} | Máximo: {cfg['cap_max']})"
             )
 
+        # Validação por cliente: confirma se o IDPEDIDO/nome casou no banco
         transito_list = []
+        linhas_valid  = []
         for item in itens:
             os_cliente = _buscar_os(item['idpedido'], item['cliente'], df_banco)
-            if os_cliente.empty or 'STATUS' not in os_cliente.columns:
-                continue
-            aguardando = os_cliente[os_cliente['STATUS'] == 'Aguardando']
-            if not aguardando.empty:
-                transito_list.append(aguardando)
+            achou      = (not os_cliente.empty) and ('STATUS' in os_cliente.columns)
+            n_total    = len(os_cliente) if achou else 0
+            n_aguard   = len(os_cliente[os_cliente['STATUS'] == 'Aguardando']) if achou else 0
+
+            if item.get('idpedido'):
+                modo = '🆔 por ID'
+            elif achou:
+                modo = '🔤 por nome'
+            else:
+                modo = '—'
+
+            linhas_valid.append({
+                'Cliente':   item['cliente'],
+                'IDPEDIDO':  item.get('idpedido') or '(vazio)',
+                'Qtd Plan.': item['qtd'],
+                'No banco':  n_total,
+                'Aguard.':   n_aguard,
+                'Match':     ('✅ ' + modo) if achou else '❌ não achou',
+            })
+
+            if achou and n_aguard > 0:
+                transito_list.append(os_cliente[os_cliente['STATUS'] == 'Aguardando'])
+
+        with st.expander(f"🔍 Conferência de clientes — Linha {linha_id}", expanded=False):
+            st.dataframe(pd.DataFrame(linhas_valid), hide_index=True, use_container_width=True)
+            nao_achou = [l['Cliente'] for l in linhas_valid if l['Match'].startswith('❌')]
+            if nao_achou:
+                st.caption(f"⚠️ Sem correspondência no banco: {', '.join(nao_achou)} "
+                           f"— preencha o IDPEDIDO desses na planilha.")
 
         if transito_list:
             df_transito = pd.concat(transito_list, ignore_index=True)
