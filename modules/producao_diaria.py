@@ -266,6 +266,11 @@ def _aba_bipe(df: pd.DataFrame):
 
     id_travado = ler_trava_global()
 
+    if 'prod_bipe_key' not in st.session_state:
+        st.session_state.prod_bipe_key = 0
+
+    codigo = None  # preenchido pelo campo de bipagem conforme o estado
+
     if id_travado:
         os_trava  = df[df['IDPEDIDOPNEU'].astype(str).str.strip() == str(id_travado).strip()]
         pendentes = os_trava[os_trava['STATUS'] == 'Aguardando']
@@ -297,20 +302,27 @@ def _aba_bipe(df: pd.DataFrame):
             vis = vis.sort_values('_ord')
 
             if not pendentes.empty:
-                st.warning(
-                    f"⚠️ **FALTAM {len(pendentes)} PNEUS** para liberar o sistema. "
-                    f"Procure as OS marcadas com ⏳:"
+                # ─── Campo DEDICADO de bipagem da OS (destaque, acima da lista) ───
+                st.markdown(f"### 📷 Bipe a OS do pneu — faltam **{len(pendentes)}**")
+                codigo = st.text_input(
+                    "Escaneie o código de barras da OS (NRORDEM):",
+                    key=f"bipe_{st.session_state.prod_bipe_key}",
+                    placeholder="Aguardando leitura do leitor...",
+                    label_visibility="collapsed",
+                )
+                st.caption("Procure as OS marcadas com ⏳ na lista abaixo.")
+                st.dataframe(
+                    vis[['NRORDEM', 'NRSERIE', 'DESENHO', 'LOCAL_PALLET', 'Situação']],
+                    hide_index=True,
+                    use_container_width=True,
                 )
             else:
                 st.success("🎉 **TODOS OS PNEUS DA COLETA ENTRARAM!** O sistema está liberado.")
-
-            st.dataframe(
-                vis[['NRORDEM', 'NRSERIE', 'DESENHO', 'LOCAL_PALLET', 'Situação']],
-                hide_index=True,
-                use_container_width=True,
-            )
-
-            if pendentes.empty:
+                st.dataframe(
+                    vis[['NRORDEM', 'NRSERIE', 'DESENHO', 'LOCAL_PALLET', 'Situação']],
+                    hide_index=True,
+                    use_container_width=True,
+                )
                 if st.button("🔓 Iniciar Próxima Coleta", type="primary"):
                     set_trava_global(None)
                     st.rerun()
@@ -329,15 +341,11 @@ def _aba_bipe(df: pd.DataFrame):
             "Digite ou Bipe o **IDPEDIDO** para puxar toda a coleta "
             "e travar a linha de produção."
         )
-
-    if 'prod_bipe_key' not in st.session_state:
-        st.session_state.prod_bipe_key = 0
-
-    codigo = st.text_input(
-        "🔍 Bipe a OS (NRORDEM) ou o IDPEDIDO:",
-        key=f"bipe_{st.session_state.prod_bipe_key}",
-        placeholder="Aguardando leitura do código de barras...",
-    )
+        codigo = st.text_input(
+            "🔍 Bipe o IDPEDIDO para iniciar a coleta (ou uma OS):",
+            key=f"bipe_{st.session_state.prod_bipe_key}",
+            placeholder="Aguardando leitura do código de barras...",
+        )
 
     if not codigo:
         return
