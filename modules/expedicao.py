@@ -68,6 +68,16 @@ def tela_expedicao():
                     f"**NÃO EMBARQUE ESTE PNEU.**"
                 )
 
+            # ── TRAVA: STATUS INVÁLIDO (salto de processo) ──────────────────
+            elif status_atual == 'Aguardando':
+                st.error(
+                    f"🛑 **ERRO DE PROCESSO!** A OS **{os_expedicao}** não tem "
+                    f"registro de entrada na produção.\n\n"
+                    f"Ela está como **'Aguardando'** — alguém esqueceu de bipar a "
+                    f"entrada deste pneu na linha. **Registre a entrada (aba "
+                    f"Entrada / Linha de Produção) antes de expedir.**"
+                )
+
             elif status_atual == 'Expedido':
                 st.warning(
                     f"⚠️ Este pneu já foi expedido "
@@ -75,7 +85,8 @@ def tela_expedicao():
                     f"Verifique duplicidade."
                 )
 
-            elif status_atual in ('Aguardando', 'Em Produção'):
+            # ── FLUXO CORRETO: só expede quem passou pela produção ──────────
+            elif status_atual == 'Em Produção':
                 df.at[i, 'STATUS']     = 'Expedido'
                 df.at[i, 'DATA_SAIDA'] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 salvar_dados(df)
