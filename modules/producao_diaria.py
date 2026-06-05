@@ -102,8 +102,8 @@ def _carregar_plano() -> dict | None:
 
 _CFG_LINHAS = {
     'A': {'col_id': 2,  'col_cliente': 3,  'col_qtd': 4,  'cor': '#1a5276', 'emoji': '🔵', 'cap_max': 165},
-    'B': {'col_id': 10, 'col_cliente': 11, 'col_qtd': 13, 'cor': '#1e8449', 'emoji': '🟢', 'cap_max': 170},
-    'C': {'col_id': 19, 'col_cliente': 20, 'col_qtd': 22, 'cor': '#784212', 'emoji': '🟠', 'cap_max': 98},
+    'B': {'col_id': 10, 'col_cliente': 11, 'col_qtd': 13, 'cor': '#1e8449', 'emoji': '🟢', 'cap_max': 165},
+    'C': {'col_id': 19, 'col_cliente': 20, 'col_qtd': 22, 'cor': '#784212', 'emoji': '🟠', 'cap_max': 77},
 }
 
 _LINHA_INI = 7   # dados começam na linha 8 do Excel (índice 7 no Pandas)
@@ -133,6 +133,49 @@ def _extrair_data(df: pd.DataFrame) -> str:
     return datetime.date.today().strftime('%d/%m/%Y')
 
 
+# ── Auto-detecção de layout (resiliente a mudanças na planilha) ──────────────
+def _detectar_layout(df: pd.DataFrame):
+    """Lê o cabeçalho e descobre as colunas IDPEDIDO/CLIENTE/QTD de cada linha
+    (A/B/C), pareando da esquerda p/ direita. Retorna (cfg, linha_ini) ou None
+    se não conseguir detectar (aí cai no mapeamento fixo)."""
+    try:
+        header_row = None
+        for r in range(min(12, len(df))):
+            valores = [_norm(df.iloc[r, c]) for c in range(df.shape[1])]
+            tem_cli = valores.count('CLIENTE') >= 2
+            tem_id  = any(v in ('IDPEDIDO', 'ID', 'ID PEDIDO', 'ID_PEDIDO') for v in valores)
+            tem_qtd = any(v.startswith('QTD') for v in valores)
+            if tem_cli and tem_id and tem_qtd:
+                header_row = r
+                break
+        if header_row is None:
+            return None
+
+        valores = [_norm(df.iloc[header_row, c]) for c in range(df.shape[1])]
+        cli_cols = [c for c, v in enumerate(valores) if v == 'CLIENTE']
+        qtd_cols = [c for c, v in enumerate(valores) if v.startswith('QTD')]
+        id_cols  = [c for c, v in enumerate(valores) if v in ('IDPEDIDO', 'ID', 'ID PEDIDO', 'ID_PEDIDO')]
+        if not (cli_cols and qtd_cols and id_cols):
+            return None
+        cli_cols.sort(); qtd_cols.sort(); id_cols.sort()
+
+        linhas = list(_CFG_LINHAS.keys())
+        n = min(len(linhas), len(cli_cols), len(qtd_cols), len(id_cols))
+        if n == 0:
+            return None
+        cfg = {}
+        for i, lid in enumerate(linhas):
+            base = dict(_CFG_LINHAS[lid])
+            if i < n:
+                base['col_cliente'] = cli_cols[i]
+                base['col_qtd']     = qtd_cols[i]
+                base['col_id']      = id_cols[i]
+            cfg[lid] = base
+        return cfg, header_row + 1
+    except Exception:
+        return None
+
+
 # ── Leitura do Excel / CSV de Programação ────────────────────────────────────
 def _ler_planilha(arquivo) -> dict:
     nome = getattr(arquivo, 'name', '') or ''
@@ -153,9 +196,16 @@ def _ler_planilha(arquivo) -> dict:
 
     resultado = {'data': _extrair_data(df), 'linhas': {}}
 
-    for linha_id, cfg in _CFG_LINHAS.items():
+    # Tenta detectar o layout pelo cabeçalho; se falhar, usa o mapa fixo PPCP2.
+    detectado = _detectar_layout(df)
+    if detectado:
+        cfg_linhas, linha_ini = detectado
+    else:
+        cfg_linhas, linha_ini = _CFG_LINHAS, _LINHA_INI
+
+    for linha_id, cfg in cfg_linhas.items():
         itens = []
-        for row_idx in range(_LINHA_INI, min(_LINHA_FIM, len(df))):
+        for row_idx in range(linha_ini, min(_LINHA_FIM, len(df))):
             try:
                 cliente = str(df.iloc[row_idx, cfg['col_cliente']]).strip()
                 qtd     = str(df.iloc[row_idx, cfg['col_qtd']]).strip()
