@@ -21,8 +21,28 @@ def _norm(s: str) -> str:
 
 
 # ── Persistência do Plano Diário no GitHub ────────────────────────────────────
+_SCHEMA_PLANO = 2   # incrementar quando o formato do plano mudar
+
+
+def _plano_valido(plano: dict) -> bool:
+    """Rejeita planos antigos/corrompidos (salvos por versões antigas do código)."""
+    if not isinstance(plano, dict):
+        return False
+    if plano.get('_schema') != _SCHEMA_PLANO:
+        return False
+    # Sanidade: nenhum 'cliente' pode ser status/ID puro
+    for itens in plano.get('linhas', {}).values():
+        for it in itens:
+            cli = str(it.get('cliente', '')).strip()
+            if cli in ('', '—') or cli.isdigit() or '🔄' in cli or 'EM PROD' in cli.upper():
+                return False
+    return True
+
+
 def _salvar_plano(plano: dict) -> None:
     """Salva o plano diário como JSON local e no GitHub."""
+    plano = dict(plano)
+    plano['_schema'] = _SCHEMA_PLANO
     conteudo_str = json.dumps(plano, ensure_ascii=False, indent=2)
     try:
         _PLANO_JSON.parent.mkdir(parents=True, exist_ok=True)
@@ -49,7 +69,8 @@ def _salvar_plano(plano: dict) -> None:
 
 
 def _carregar_plano() -> dict | None:
-    """Carrega o plano diário salvo (GitHub → local → None)."""
+    """Carrega o plano diário salvo (GitHub → local → None).
+    Planos de schema antigo/corrompido são descartados."""
     try:
         from modules.database import _modo_github, _github_cfg
         if _modo_github():
@@ -59,12 +80,16 @@ def _carregar_plano() -> dict | None:
             r = requests.get(url, headers={"Authorization": f"token {token}"}, timeout=5)
             if r.status_code == 200:
                 conteudo = base64.b64decode(r.json()["content"]).decode("utf-8")
-                return json.loads(conteudo)
+                plano = json.loads(conteudo)
+                if _plano_valido(plano):
+                    return plano
     except Exception:
         pass
     if _PLANO_JSON.exists():
         try:
-            return json.loads(_PLANO_JSON.read_text(encoding="utf-8"))
+            plano = json.loads(_PLANO_JSON.read_text(encoding="utf-8"))
+            if _plano_valido(plano):
+                return plano
         except Exception:
             pass
     return None
