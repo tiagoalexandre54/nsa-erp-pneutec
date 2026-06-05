@@ -1,121 +1,42 @@
 {
-  "data": "05/06/2026",
+  "data": "04/06/2026",
   "linhas": {
     "A": [
       {
-        "idpedido": "",
-        "cliente": "364222",
-        "qtd": "0"
+        "idpedido": "364222",
+        "cliente": "CORPUS SANEAMENTO",
+        "qtd": "6"
       },
       {
-        "idpedido": "",
-        "cliente": "364278",
-        "qtd": "0"
+        "idpedido": "364278",
+        "cliente": "POLIMIX",
+        "qtd": "6"
       }
     ],
     "B": [
       {
         "idpedido": "366850",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
+        "cliente": "GAB",
+        "qtd": "10"
       },
       {
         "idpedido": "364199",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "🔄 EM PROD.",
-        "qtd": "0"
-      },
-      {
-        "idpedido": "",
-        "cliente": "⚠ PENDENTE = Aguardando início",
-        "qtd": "0"
+        "cliente": "VIAÇÃO METROPOLE IMPERADOR",
+        "qtd": "12"
       }
     ],
-    "C": []
+    "C": [
+      {
+        "idpedido": "364717",
+        "cliente": "TRANSVIAS",
+        "qtd": "11"
+      },
+      {
+        "idpedido": "364950",
+        "cliente": "ARMAC",
+        "qtd": "2"
+      }
+    ]
   },
   "_schema": 2
 }
