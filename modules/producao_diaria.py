@@ -94,19 +94,43 @@ def _carregar_plano() -> dict | None:
             pass
     return None
 
-# ── Mapeamento EXATO da Planilha Oficial ─────────────────────────────────────
-# Linha A: Colunas 1, 2, 4 (B, C, E no Excel) | Cap: 150 + 10% = 165
-# Linha B: Colunas 9, 10, 12 (J, K, M no Excel) | Cap: 155 + 10% = 170
-# Linha C: Colunas 17, 18, 20 (R, S, U no Excel) | Cap: 89 + 10% = 98
+# ── Mapeamento EXATO da Planilha Oficial (base PPCP2, com IDPEDIDO) ──────────
+# Cabeçalho na linha 7 (índice 6): cada bloco tem # | IDPEDIDO | CLIENTE | QTD
+# Linha A: IDPEDIDO=col 2,  CLIENTE=col 3,  QTD=col 4
+# Linha B: IDPEDIDO=col 10, CLIENTE=col 11, QTD=col 13
+# Linha C: IDPEDIDO=col 19, CLIENTE=col 20, QTD=col 22
 
 _CFG_LINHAS = {
-    'A': {'col_id': 5,  'col_cliente': 2,  'col_qtd': 3,  'cor': '#1a5276', 'emoji': '🔵', 'cap_max': 165},
-    'B': {'col_id': 10, 'col_cliente': 7,  'col_qtd': 8,  'cor': '#1e8449', 'emoji': '🟢', 'cap_max': 170},
-    'C': {'col_id': 16, 'col_cliente': 12, 'col_qtd': 13, 'cor': '#784212', 'emoji': '🟠', 'cap_max': 98},
+    'A': {'col_id': 2,  'col_cliente': 3,  'col_qtd': 4,  'cor': '#1a5276', 'emoji': '🔵', 'cap_max': 165},
+    'B': {'col_id': 10, 'col_cliente': 11, 'col_qtd': 13, 'cor': '#1e8449', 'emoji': '🟢', 'cap_max': 170},
+    'C': {'col_id': 19, 'col_cliente': 20, 'col_qtd': 22, 'cor': '#784212', 'emoji': '🟠', 'cap_max': 98},
 }
 
 _LINHA_INI = 7   # dados começam na linha 8 do Excel (índice 7 no Pandas)
-_LINHA_FIM = 40
+_LINHA_FIM = 60
+
+
+def _extrair_data(df: pd.DataFrame) -> str:
+    """Procura uma célula 'DATA:' nas primeiras linhas e devolve a data ao lado.
+    Se não encontrar, usa a data de hoje."""
+    try:
+        for r in range(min(6, len(df))):
+            for c in range(min(12, df.shape[1])):
+                if 'DATA' in str(df.iloc[r, c]).upper():
+                    # Procura uma data parseável nas células à direita
+                    for cc in range(c + 1, min(c + 6, df.shape[1])):
+                        val = str(df.iloc[r, cc]).strip()
+                        if not val:
+                            continue
+                        # ISO (2026-06-04) primeiro; só usa dayfirst no fallback BR
+                        dt = pd.to_datetime(val, errors='coerce')
+                        if pd.isna(dt):
+                            dt = pd.to_datetime(val, errors='coerce', dayfirst=True)
+                        if pd.notna(dt):
+                            return dt.strftime('%d/%m/%Y')
+    except Exception:
+        pass
+    return datetime.date.today().strftime('%d/%m/%Y')
 
 
 # ── Leitura do Excel / CSV de Programação ────────────────────────────────────
@@ -127,7 +151,7 @@ def _ler_planilha(arquivo) -> dict:
             df = pd.read_excel(arquivo, sheet_name=0, header=None, dtype=str)
             df = df.fillna('')
 
-    resultado = {'data': datetime.date.today().strftime('%d/%m/%Y'), 'linhas': {}}
+    resultado = {'data': _extrair_data(df), 'linhas': {}}
 
     for linha_id, cfg in _CFG_LINHAS.items():
         itens = []
@@ -138,7 +162,14 @@ def _ler_planilha(arquivo) -> dict:
 
                 if not cliente or cliente in ('', 'nan'):
                     continue
-                if any(p in cliente.upper() for p in ('TOTAL', 'PROGRAMADO')):
+                # Pula totais e linhas de legenda (ex: "⛔ PARADO = Linha interrompida")
+                cli_up = cliente.upper()
+                if any(p in cli_up for p in (
+                    'TOTAL', 'PROGRAMADO', 'PARADO', 'INTERROMP',
+                    'FINALIZAR', 'LEGENDA', 'LINHA ',
+                )):
+                    continue
+                if '=' in cliente or cliente[0] in '⛔⚠️✅🔄☀':
                     continue
 
                 idpedido = str(df.iloc[row_idx, cfg['col_id']]).strip()
