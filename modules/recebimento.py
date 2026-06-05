@@ -3,6 +3,7 @@ Tela de Recebimento, Alocação de Pallets e Gestão FIFO.
 """
 import streamlit as st
 import pandas as pd
+import datetime
 from modules.database import salvar_dados
 
 
@@ -71,7 +72,10 @@ def _aba_alocar_pallet(df: pd.DataFrame):
                     elif pallet_atual == pallet_destino:
                         st.warning(f"⚠️ A OS {os_bipada} já está no pallet **{pallet_destino}**.")
                     else:
-                        st.session_state.bd_pneus.at[i, 'LOCAL_PALLET'] = pallet_destino
+                        agora = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        st.session_state.bd_pneus.at[i, 'LOCAL_PALLET']  = pallet_destino
+                        # Carimba a data de CHEGADA/recebimento no pátio
+                        st.session_state.bd_pneus.at[i, 'DATA_ENTRADA'] = agora
                         salvar_dados(st.session_state.bd_pneus)
                         st.session_state.msg_receb = f"✅ OS {os_bipada} guardada no **{pallet_destino}**!"
                         st.session_state.recebimento_key += 1

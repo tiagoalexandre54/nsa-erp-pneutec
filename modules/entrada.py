@@ -1,6 +1,7 @@
 """
-Tela 2 — Apontamento de Entrada (Chão de Fábrica) — DO DIA.
-Mostra apenas os pneus da programação do dia (coletas A/B/C importadas).
+Tela 2 — Apontamento de Entrada (Chão de Fábrica).
+Mostra os pneus RECEBIDOS no pátio (alocados em pallet no Recebimento)
+numa data específica, que ainda aguardam entrada na linha de produção.
 """
 import streamlit as st
 import pandas as pd
@@ -8,14 +9,25 @@ import datetime
 from modules.database import salvar_dados
 
 
+def _parse_data(serie: pd.Series) -> pd.Series:
+    """Converte DATA_ENTRADA para datetime tentando formatos explícitos."""
+    dt = pd.to_datetime(serie, format="%d/%m/%Y %H:%M:%S", errors='coerce')
+    for fmt in ("%d/%m/%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        falta = dt.isna()
+        if not falta.any():
+            break
+        dt.loc[falta] = pd.to_datetime(serie[falta], format=fmt, errors='coerce')
+    return dt
+
+
 def tela_entrada():
-    st.title("🏭 Apontamento de Entrada — Chão de Fábrica do Dia")
+    st.title("🏭 Apontamento de Entrada — Recebidos do Dia")
 
-    from modules.producao_diaria import _carregar_plano, _buscar_os, _CFG_LINHAS
-
-    plano = _carregar_plano()
-
-    st.info("Bipe a OS (NRORDEM) para registrar a entrada na linha. A lista abaixo é a **programação do dia**.")
+    st.info(
+        "Bipe a OS (NRORDEM) para registrar a entrada na linha. A lista mostra os "
+        "pneus **recebidos no pátio** (alocados em pallet) na data escolhida que "
+        "ainda **aguardam** entrada na produção."
+    )
 
     # ── Campo de bipe ────────────────────────────────────────────────────────
     if 'entrada_key' not in st.session_state:
@@ -39,18 +51,15 @@ def tela_entrada():
 
     st.markdown("---")
 
-    # ── Lista da PROGRAMAÇÃO DO DIA ──────────────────────────────────────────
-    if not plano:
-        st.warning(
-            "Nenhuma programação carregada. Importe a planilha na aba "
-            "**🏗️ Pneus a Produzir → 📂 Importar**. Exibindo todos os pneus "
-            "aguardando como alternativa:"
-        )
-        _lista_todos_aguardando()
-        return
+    # ── Filtro por data de recebimento ───────────────────────────────────────
+    col_d, _ = st.columns([1, 2])
+    data_sel = col_d.date_input(
+        "📅 Data de recebimento:",
+        value=datetime.date.today(),
+        format="DD/MM/YYYY",
+    )
 
-    st.subheader(f"📋 Programação do dia — {plano.get('data', '—')}")
-    _alerta_do_dia(plano, _buscar_os, _CFG_LINHAS)
+    _lista_recebidos_do_dia(data_sel)
 
 
 # ── Processa o bipe (Aguardando → Em Produção) ───────────────────────────────
@@ -96,29 +105,27 @@ def _processar_bipe(os_bipada: str):
         st.warning(f"⚠️ Status desconhecido: **'{status_atual}'**.")
 
 
-# ── Lista guiada pela programação do dia, por linha A/B/C ─────────────────────
-def _alerta_do_dia(plano: dict, _buscar_os, _CFG_LINHAS):
+# ── Lista dos recebidos na data, aguardando, agrupados por pallet ────────────
+def _lista_recebidos_do_dia(data_sel: datetime.date):
     df = st.session_state.bd_pneus
 
-    total_aguard = 0
-    blocos = []  # (linha_id, cfg, [(item, df_aguard)])
+    # Só pneus alocados no pátio (têm pallet) e ainda aguardando entrada
+    base = df[
+        (df['STATUS'] == 'Aguardando') &
+        (df['LOCAL_PALLET'].astype(str).str.strip() != '')
+    ].copy()
 
-    for linha_id, cfg in _CFG_LINHAS.items():
-        itens = plano['linhas'].get(linha_id, [])
-        linha_aguard = []
-        for item in itens:
-            os_cli = _buscar_os(item.get('idpedido', ''), item['cliente'], df)
-            if os_cli.empty or 'STATUS' not in os_cli.columns:
-                continue
-            aguard = os_cli[os_cli['STATUS'] == 'Aguardando']
-            if not aguard.empty:
-                linha_aguard.append((item, aguard))
-                total_aguard += len(aguard)
-        if linha_aguard:
-            blocos.append((linha_id, cfg, linha_aguard))
+    if base.empty:
+        st.info("Nenhum pneu alocado no pátio aguardando entrada. Aloque no **Recebimento**.")
+        return
 
-    if total_aguard == 0:
-        st.success("🎉 **Toda a programação do dia já entrou na produção!** Nada aguardando.")
+    base['_data'] = _parse_data(base['DATA_ENTRADA']).dt.date
+    do_dia = base[base['_data'] == data_sel]
+
+    data_txt = data_sel.strftime('%d/%m/%Y')
+
+    if do_dia.empty:
+        st.info(f"Nenhum pneu recebido em **{data_txt}** aguardando entrada na produção.")
         return
 
     st.markdown(
@@ -126,54 +133,21 @@ def _alerta_do_dia(plano: dict, _buscar_os, _CFG_LINHAS):
         <div style="background:#fff3cd;border:2px solid #ffc107;border-radius:8px;
                     padding:16px;margin-bottom:16px;">
           <h4 style="color:#856404;margin:0 0 8px 0;">
-            🚨 ATENÇÃO — {total_aguard} PNEU(S) DA PROGRAMAÇÃO AGUARDANDO ENTRADA
+            🚨 {len(do_dia)} PNEU(S) RECEBIDO(S) EM {data_txt} AGUARDANDO ENTRADA
           </h4>
           <p style="color:#856404;margin:0;">
-            Bipe os NRORDEMs abaixo no campo de leitura para registrar a entrada na linha de produção.
+            Bipe os NRORDEMs abaixo no campo de leitura para registrar a entrada na linha.
           </p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    for linha_id, cfg, linha_aguard in blocos:
-        n_linha = sum(len(a) for _, a in linha_aguard)
-        st.markdown(
-            f"<div style='background:{cfg['cor']};border-radius:6px;"
-            f"padding:8px 16px;margin:12px 0 4px;'>"
-            f"<h4 style='color:#fff;margin:0;'>"
-            f"{cfg['emoji']} LINHA {linha_id} — {n_linha} pneu(s) aguardando"
-            f"</h4></div>",
-            unsafe_allow_html=True,
-        )
-        for item, aguard in linha_aguard:
-            id_txt = item.get('idpedido') or '(sem ID)'
-            with st.expander(
-                f"📦 {item['cliente']} (ID {id_txt}) — {len(aguard)} pneu(s)",
-                expanded=True,
-            ):
-                st.dataframe(
-                    aguard[['NRORDEM', 'NRSERIE', 'DESENHO', 'LOCAL_PALLET']]
-                    .reset_index(drop=True),
-                    use_container_width=True,
-                    hide_index=True,
-                )
-
-
-# ── Fallback: todos os aguardando (quando não há programação carregada) ──────
-def _lista_todos_aguardando():
-    df = st.session_state.bd_pneus
-    pendentes = df[df['STATUS'] == 'Aguardando'].copy()
-
-    if pendentes.empty:
-        st.info("Nenhuma OS aguardando entrada no momento.")
-        return
-
-    st.markdown(f"**{len(pendentes)} pneu(s) aguardando (todos os clientes):**")
-    for cliente, grupo in pendentes.groupby('CLIENTE'):
-        with st.expander(f"📦 {cliente} — {len(grupo)} pneu(s)", expanded=False):
+    for pallet, grupo in do_dia.groupby('LOCAL_PALLET'):
+        with st.expander(f"📦 Pallet {pallet} — {len(grupo)} pneu(s)", expanded=True):
             st.dataframe(
-                grupo[['NRORDEM', 'NRSERIE', 'DESENHO', 'LOCAL_PALLET']]
+                grupo[['NRORDEM', 'CLIENTE', 'DESENHO', 'NRSERIE', 'IDPEDIDOPNEU']]
+                .rename(columns={'IDPEDIDOPNEU': 'IDPEDIDO'})
                 .reset_index(drop=True),
                 use_container_width=True,
                 hide_index=True
