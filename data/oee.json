@@ -169,11 +169,11 @@
     },
     "2026-06-07": {
       "colab_total": 32,
-      "colab_presentes": 0,
+      "colab_presentes": 31,
       "paradas_plan_h": 0.0,
       "paradas_nplan_h": 0.0,
-      "produzidos": 0,
-      "defeitos": 0
+      "produzidos": 360,
+      "defeitos": 1
     }
   },
   "analise_manual": {
