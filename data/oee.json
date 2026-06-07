@@ -168,12 +168,12 @@
       "defeitos": 1
     },
     "2026-06-07": {
-      "colab_total": 32,
-      "colab_presentes": 31,
+      "colab_total": 40,
+      "colab_presentes": 35,
       "paradas_plan_h": 0.0,
       "paradas_nplan_h": 0.0,
-      "produzidos": 360,
-      "defeitos": 1
+      "produzidos": 350,
+      "defeitos": 3
     }
   },
   "analise_manual": {
