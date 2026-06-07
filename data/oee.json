@@ -166,6 +166,14 @@
       "paradas_nplan_h": 0.0,
       "produzidos": 356,
       "defeitos": 1
+    },
+    "2026-06-07": {
+      "colab_total": 0,
+      "colab_presentes": 0,
+      "paradas_plan_h": 0.0,
+      "paradas_nplan_h": 0.0,
+      "produzidos": 0,
+      "defeitos": 0
     }
   },
   "analise_manual": {
