@@ -6,6 +6,15 @@
     "turno_horas": 8.8,
     "dias_uteis": 20
   },
-  "lancamentos": {},
+  "lancamentos": {
+    "2026-06-01": {
+      "colab_total": 36,
+      "colab_presentes": 34,
+      "paradas_plan_h": 0.0,
+      "paradas_nplan_h": 0.0,
+      "produzidos": 327,
+      "defeitos": 0
+    }
+  },
   "analise_manual": {}
 }
