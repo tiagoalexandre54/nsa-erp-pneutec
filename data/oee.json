@@ -36,6 +36,16 @@
       "produzidos": 330,
       "defeitos": 0,
       "observacoes": "atestado-Alexandre Faustino \nférias\nAdemir\njosé luiz"
+    },
+    "2026-06-04": {
+      "colab_total": 0,
+      "colab_presentes": 0,
+      "faltas": 0,
+      "paradas_plan_h": 0.0,
+      "paradas_nplan_h": 0.0,
+      "produzidos": 0,
+      "defeitos": 0,
+      "observacoes": "feriado"
     }
   },
   "analise_manual": {},
