@@ -18,10 +18,12 @@
     "2026-06-02": {
       "colab_total": 36,
       "colab_presentes": 33,
+      "faltas": 3,
       "paradas_plan_h": 0.0,
       "paradas_nplan_h": 0.0,
       "produzidos": 324,
-      "defeitos": 0
+      "defeitos": 0,
+      "observacoes": "atestado-Alexandre Faustino \nférias\nAdemir\njosé luiz"
     },
     "2026-06-03": {
       "colab_total": 36,
