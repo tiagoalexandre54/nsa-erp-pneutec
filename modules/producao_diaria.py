@@ -614,6 +614,13 @@ def _aba_clientes_em_linha(df_banco: pd.DataFrame):
 
     st.caption(f"📅 Programação de **{plano.get('data', '—')}**")
 
+    # Carrega prioridade do itinerário (pode estar vazio se não houver roteiro salvo)
+    try:
+        from modules.itinerario import carregar_mapa_prioridade
+        mapa_parada = carregar_mapa_prioridade()
+    except Exception:
+        mapa_parada = {}
+
     tot_prog = tot_aguard = tot_prod = tot_exped = 0
 
     for linha_id, cfg in _CFG_LINHAS.items():
@@ -647,7 +654,9 @@ def _aba_clientes_em_linha(df_banco: pd.DataFrame):
             else:
                 situ = '⏳ Aguardando entrada'
 
+            parada_itin = mapa_parada.get(item['cliente'], '')
             linhas.append({
+                'Parada 🗺️':    parada_itin or '—',
                 'IDPEDIDO':     item.get('idpedido') or '(sem ID)',
                 'Cliente':      item['cliente'],
                 'Programado':   prog,

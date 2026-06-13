@@ -13,6 +13,7 @@ from modules.relatorios import tela_relatorios
 from modules.acesso_mobile import painel_acesso_mobile
 from modules.recebimento import tela_recebimento
 from modules.producao_diaria import tela_producao_diaria
+from modules.itinerario import tela_itinerario
 
 _LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
 
@@ -38,7 +39,7 @@ st.sidebar.markdown("---")
 
 menu = st.sidebar.radio(
     "Selecione a Tela:",
-    ["📊 Painel PPCP", "📥 Recebimento", "🏗️ Pneus a Produzir", "🏭 Entrada (Chão de Fábrica)", "🚚 Expedição (Carga)", "📈 Relatórios"]
+    ["📊 Painel PPCP", "📥 Recebimento", "🏗️ Pneus a Produzir", "🏭 Entrada (Chão de Fábrica)", "🚚 Expedição (Carga)", "🗺️ Itinerário", "📈 Relatórios"]
 )
 
 st.sidebar.markdown("---")
@@ -68,5 +69,7 @@ elif menu == "🏭 Entrada (Chão de Fábrica)":
     tela_entrada()
 elif menu == "🚚 Expedição (Carga)":
     tela_expedicao()
+elif menu == "🗺️ Itinerário":
+    tela_itinerario()
 elif menu == "📈 Relatórios":
     tela_relatorios()
