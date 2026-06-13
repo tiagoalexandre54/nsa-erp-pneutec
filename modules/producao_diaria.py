@@ -647,16 +647,31 @@ def _aba_clientes_em_linha(df_banco: pd.DataFrame):
 
 
 def _status_por_itinerario(itin: dict, df_banco: pd.DataFrame):
-    """Plano de produção gerado automaticamente a partir do itinerário do dia."""
+    """Plano de produção gerado automaticamente a partir do itinerário do dia.
+
+    Exibe APENAS OS em aberto (STATUS == 'Aguardando') — pneus que ainda não
+    entraram na linha de produção.  OS 'Em Produção' e 'Expedido' são omitidas
+    aqui porque já foram tratadas (biped na linha ou entregues ao cliente).
+    """
 
     data_itin = itin.get('data', '—')
     mot_itin  = itin.get('motorista', '—')
     paradas   = itin.get('paradas', [])
 
+    # ── Filtra o banco: apenas OS que NÃO entraram em produção ainda ──────────
+    df_aberto = df_banco[df_banco['STATUS'] == 'Aguardando'].copy()
+
+    total_banco  = len(df_banco)
+    total_aberto = len(df_aberto)
+    ja_em_linha  = len(df_banco[df_banco['STATUS'] == 'Em Produção'])
+    expedidos    = len(df_banco[df_banco['STATUS'] == 'Expedido'])
+
     st.caption(
         f"📅 Roteiro de **{data_itin}** | "
         f"Motorista(s): **{mot_itin}** | "
-        f"**{len(paradas)} parada(s)** detectadas automaticamente pelo itinerário"
+        f"**{len(paradas)} parada(s)** — "
+        f"exibindo apenas OS em aberto (**{total_aberto}** de {total_banco} | "
+        f"já na linha: {ja_em_linha} | expedidos: {expedidos})"
     )
 
     # Agrupa paradas por motorista (cada motorista = "linha" de produção)
@@ -668,31 +683,38 @@ def _status_por_itinerario(itin: dict, df_banco: pd.DataFrame):
     cores = ['#1a5276', '#1e8449', '#784212', '#6c3483',
              '#117a65', '#b7950b', '#922b21', '#17202a', '#0e6655']
 
-    tot_aguard = tot_prod = tot_exped = 0
+    tot_aguard = 0
 
     for idx, (motorista, paradas_mot) in enumerate(por_motorista.items()):
         cor = cores[idx % len(cores)]
         linhas = []
-        l_aguard = l_prod = l_exped = 0
+        l_aguard = 0
 
         for i, p in enumerate(paradas_mot):
             cli   = p.get('cliente', '')
-            prazo = p.get('prazo', '')  or '—'
+            prazo = p.get('prazo', '') or '—'
 
-            # Busca OS no banco pelo nome do cliente (fuzzy, sem IDPEDIDO)
-            os_cli = _buscar_os('', cli, df_banco)
+            # Busca apenas nas OS em aberto (Aguardando)
+            os_cli = _buscar_os('', cli, df_aberto)
 
             if os_cli.empty or 'STATUS' not in os_cli.columns:
-                aguard = prod = exped = 0
+                aguard    = 0
                 idpedidos = '—'
-                situ = '❌ Sem OS no banco'
+                # Verifica se há OS mas todas já estão em produção ou expedidas
+                os_total = _buscar_os('', cli, df_banco)
+                if os_total.empty:
+                    situ = '❌ Sem OS no banco'
+                else:
+                    em_prod = len(os_total[os_total['STATUS'] == 'Em Produção'])
+                    exped   = len(os_total[os_total['STATUS'] == 'Expedido'])
+                    if exped > 0 and em_prod == 0:
+                        situ = '✅ Expedido'
+                    else:
+                        situ = '🔄 Na linha (sem pendentes)'
             else:
-                aguard = len(os_cli[os_cli['STATUS'] == 'Aguardando'])
-                prod   = len(os_cli[os_cli['STATUS'] == 'Em Produção'])
-                exped  = len(os_cli[os_cli['STATUS'] == 'Expedido'])
-                total  = aguard + prod + exped
+                aguard = len(os_cli)   # todos são 'Aguardando' (já filtrado)
 
-                # Detecta IDPEDIDOs únicos presentes no banco para este cliente
+                # Detecta IDPEDIDOs únicos das OS em aberto
                 ids_raw = (
                     os_cli['IDPEDIDOPNEU']
                     .dropna()
@@ -701,50 +723,42 @@ def _status_por_itinerario(itin: dict, df_banco: pd.DataFrame):
                     .tolist()
                 )
                 ids_validos = [x for x in ids_raw if x not in ('', 'nan', '0')]
-                idpedidos = ' / '.join(ids_validos) if ids_validos else '—'
+                idpedidos   = ' / '.join(ids_validos) if ids_validos else '—'
+                situ        = '⏳ Aguardando produção'
 
-                if total == 0:
-                    situ = '❌ Sem OS no banco'
-                elif aguard == 0 and prod == 0:
-                    situ = '✅ Expedido'
-                elif prod > 0 and aguard == 0:
-                    situ = '🔄 Todos na linha'
-                elif prod > 0:
-                    situ = '🔄 Em produção'
-                else:
-                    situ = '⏳ Aguardando'
-
-            l_aguard += aguard; l_prod += prod; l_exped += exped
+            l_aguard += aguard
 
             linhas.append({
-                'Parada':       i + 1,
-                'Cliente':      cli,
-                'IDPEDIDO':     idpedidos,
-                'Prazo':        prazo,
-                'Aguardando':   aguard,
-                'Em Produção':  prod,
-                'Expedido':     exped,
-                'Situação':     situ,
+                'Parada':          i + 1,
+                'Cliente':         cli,
+                'IDPEDIDO':        idpedidos,
+                'Prazo':           prazo,
+                'OS em Aberto':    aguard,
+                'Situação':        situ,
             })
 
-        tot_aguard += l_aguard; tot_prod += l_prod; tot_exped += l_exped
+        tot_aguard += l_aguard
+
+        # Só exibe bloco do motorista se houver pendências (aguardando > 0)
+        tem_pendencias = l_aguard > 0
+        cor_bloco = cor if tem_pendencias else '#555555'
+        label_extra = f'⏳ {l_aguard} a produzir' if tem_pendencias else '✅ Sem pendências'
 
         st.markdown(
-            f"<div style='background:{cor};border-radius:6px;"
+            f"<div style='background:{cor_bloco};border-radius:6px;"
             f"padding:8px 16px;margin:14px 0 4px;'>"
             f"<h4 style='color:#fff;margin:0;'>"
-            f"🚛 {motorista} — {len(paradas_mot)} parada(s) | "
-            f"⏳ {l_aguard} aguard. | 🔄 {l_prod} produção | ✅ {l_exped} exped."
+            f"🚛 {motorista} — {len(paradas_mot)} parada(s) | {label_extra}"
             f"</h4></div>",
             unsafe_allow_html=True,
         )
-        st.dataframe(pd.DataFrame(linhas), hide_index=True, use_container_width=True)
+        # Mostra apenas clientes com OS em aberto em destaque; os sem pendência ficam cinza
+        if linhas:
+            df_lin = pd.DataFrame(linhas)
+            st.dataframe(df_lin, hide_index=True, use_container_width=True)
 
     st.markdown("---")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("⏳ Aguardando",  tot_aguard)
-    c2.metric("🔄 Em Produção", tot_prod)
-    c3.metric("✅ Expedido",    tot_exped)
+    st.metric("⏳ Total de OS em Aberto (a produzir hoje)", tot_aguard)
 
 
 def _status_por_plano_ppcp(plano: dict, df_banco: pd.DataFrame):
