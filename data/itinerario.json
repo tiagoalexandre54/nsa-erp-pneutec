@@ -1,0 +1,520 @@
+{
+  "data": "15/06/2026",
+  "motorista": "EVERTON / RAFAEL / EDUARDO / RAILDO / RENAN / WELTON / ROGERIO / WASHINGTON / ELIANDRO",
+  "veiculo": "",
+  "paradas": [
+    {
+      "cliente": "AMBIENTAL",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EVERTON | Prazo: 02 DIAS",
+      "motorista": "EVERTON",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "SHALON",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EVERTON | Prazo: 02 DIAS",
+      "motorista": "EVERTON",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "ITAIM",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EVERTON | Prazo: 02 DIAS",
+      "motorista": "EVERTON",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "CORPOTEC",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EVERTON",
+      "motorista": "EVERTON",
+      "prazo": ""
+    },
+    {
+      "cliente": "ATT FERRAZ",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EVERTON | Prazo: 02 DIAS",
+      "motorista": "EVERTON",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "RADIAL SUZANO",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EVERTON | Prazo: 02 DIAS",
+      "motorista": "EVERTON",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "NOVA OPÇÃO",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EVERTON | Prazo: 03 DIAS",
+      "motorista": "EVERTON",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "GALVÃO",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EVERTON",
+      "motorista": "EVERTON",
+      "prazo": ""
+    },
+    {
+      "cliente": "TIP BUSS",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EVERTON",
+      "motorista": "EVERTON",
+      "prazo": ""
+    },
+    {
+      "cliente": "NORTE BUSS",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAFAEL | Prazo: 02 DIAS",
+      "motorista": "RAFAEL",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "TRANSPPASS",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAFAEL | Prazo: 02 DIAS",
+      "motorista": "RAFAEL",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "LUFT",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EDUARDO | Prazo: 01 DIA",
+      "motorista": "EDUARDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "INTEC",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EDUARDO | Prazo: 01 DIA",
+      "motorista": "EDUARDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "BB JANDIRA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EDUARDO | Prazo: 01 DIA",
+      "motorista": "EDUARDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "BLR",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: EDUARDO | Prazo: 03 DIAS",
+      "motorista": "EDUARDO",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "BRASPRESS",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 03 DIAS",
+      "motorista": "RAILDO",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "MRT",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 01 DIA",
+      "motorista": "RAILDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "JOMED",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 01 DIA",
+      "motorista": "RAILDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "MARAJA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 01 DIA",
+      "motorista": "RAILDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "NOVA BELEM",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 01 DIA",
+      "motorista": "RAILDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "EXPRESSO VALE",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 01 DIA",
+      "motorista": "RAILDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "TCM LOGISTICA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 01 DIA",
+      "motorista": "RAILDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "PACIFICO LOGISTICA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 01 DIA",
+      "motorista": "RAILDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "EVIDENCIA LOGISTICA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 01 DIA",
+      "motorista": "RAILDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "SR LOGISTICA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 01 DIA",
+      "motorista": "RAILDO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "QUEFIRA LOGISTICA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RAILDO | Prazo: 02 DIAS",
+      "motorista": "RAILDO",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "BORELLI",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RENAN | Prazo: 02DIAS",
+      "motorista": "RENAN",
+      "prazo": "02DIAS"
+    },
+    {
+      "cliente": "EXPRESS",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RENAN | Prazo: 02 DIAS",
+      "motorista": "RENAN",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "TRANSZOIÃO",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RENAN | Prazo: 04 DIAS",
+      "motorista": "RENAN",
+      "prazo": "04 DIAS"
+    },
+    {
+      "cliente": "PIRATININGA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: RENAN | Prazo: 02 DIAS",
+      "motorista": "RENAN",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "VIAÇÃO TRANSCAP",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WELTON | Prazo: 01 DIA",
+      "motorista": "WELTON",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "VIAÇÃO CAMPO BELO G1",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WELTON | Prazo: 01 DIA",
+      "motorista": "WELTON",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "VIAÇÃO CAMPO BELO G2",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WELTON | Prazo: 01 DIA",
+      "motorista": "WELTON",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "VIAÇÃO GATUSA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WELTON | Prazo: 01 DIA",
+      "motorista": "WELTON",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "RG LOG",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 03 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "COVRE",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 03 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "SUPERLAMINAÇÃO",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 03 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "MARLI CASTELI",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 04 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "04 DIAS"
+    },
+    {
+      "cliente": "PROAIR",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 04 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "04 DIAS"
+    },
+    {
+      "cliente": "CORPUS",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 03 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "RFR",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 03 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "TRANSVAL",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 03 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "MORADA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 03 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "ARARAQUARA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 04 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "04 DIAS"
+    },
+    {
+      "cliente": "O.P.R LIMEIRA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ROGERIO | Prazo: 04 DIAS",
+      "motorista": "ROGERIO",
+      "prazo": "04 DIAS"
+    },
+    {
+      "cliente": "CONCRETIZA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 05 DIAS",
+      "motorista": "WASHINGTON",
+      "prazo": "05 DIAS"
+    },
+    {
+      "cliente": "MSG",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 02 DIAS",
+      "motorista": "WASHINGTON",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "AA ALTERNATIVA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 03 DIAS",
+      "motorista": "WASHINGTON",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "EDUARDO PEREIRA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 02 DIAS",
+      "motorista": "WASHINGTON",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "NEW MRDK",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 02 DIAS",
+      "motorista": "WASHINGTON",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "TECMAR",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 01 DIA",
+      "motorista": "WASHINGTON",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "GAB TRANSPORTES",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 01 DIA",
+      "motorista": "WASHINGTON",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "TRANSFERRARI",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 02 DIAS",
+      "motorista": "WASHINGTON",
+      "prazo": "02 DIAS"
+    },
+    {
+      "cliente": "GUEDES AMORIM",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 01 DIA",
+      "motorista": "WASHINGTON",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "VALEBETON",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 03 DIAS",
+      "motorista": "WASHINGTON",
+      "prazo": "03 DIAS"
+    },
+    {
+      "cliente": "MULTILIXO TABOÃO",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: WASHINGTON | Prazo: 01 DIA",
+      "motorista": "WASHINGTON",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "BARBIERI",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ELIANDRO | Prazo: 01 DIA",
+      "motorista": "ELIANDRO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "BRASIL ROSSO",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ELIANDRO | Prazo: 01 DIA",
+      "motorista": "ELIANDRO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "VIAÇÃO ITUPEVA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ELIANDRO | Prazo: 01 DIA",
+      "motorista": "ELIANDRO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "AMBIPAR",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ELIANDRO | Prazo: 01 DIA",
+      "motorista": "ELIANDRO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "CINTIA",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ELIANDRO | Prazo: 01 DIA",
+      "motorista": "ELIANDRO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "BORRACHARIA DO BAIXINHO",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ELIANDRO | Prazo: 01 DIA",
+      "motorista": "ELIANDRO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "TRANS HAYAKU",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ELIANDRO | Prazo: 01 DIA",
+      "motorista": "ELIANDRO",
+      "prazo": "01 DIA"
+    },
+    {
+      "cliente": "TERRASIM CAMPINAS",
+      "tipo": "Entrega e Coleta",
+      "hora": "",
+      "obs": "Motorista: ELIANDRO | Prazo: 01 DIA",
+      "motorista": "ELIANDRO",
+      "prazo": "01 DIA"
+    }
+  ],
+  "_schema": 1
+}
