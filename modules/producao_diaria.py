@@ -600,11 +600,11 @@ def _aba_importar(df_banco: pd.DataFrame):
         st.markdown("")
 
 
-# ── 3. Status por Cliente (conforme a Programação do dia) ────────────────────
+# ── 3. Fila de Produção PPCP ──────────────────────────────────────────────────
 def _aba_clientes_em_linha(df_banco: pd.DataFrame):
-    st.subheader("🏭 Status por Cliente (conforme Programação)")
+    st.subheader("🏭 Fila de Produção — OS em Aberto por Cliente")
 
-    # ── Tenta carregar o itinerário do dia ────────────────────────────────────
+    # Itinerário: opcional — usado só para calcular urgência de entrega
     itin = None
     try:
         from modules.itinerario import _carregar_itinerario
@@ -614,151 +614,175 @@ def _aba_clientes_em_linha(df_banco: pd.DataFrame):
     except Exception:
         pass
 
-    # ── Tenta carregar plano PPCP importado ───────────────────────────────────
     plano = _carregar_plano()
 
-    tem_itin  = itin  is not None
-    tem_plano = plano is not None
-
-    # ── Escolha da fonte ──────────────────────────────────────────────────────
-    if not tem_itin and not tem_plano:
-        st.info(
-            "Nenhuma programação disponível.\n\n"
-            "• Gere o plano automático em **🗺️ Itinerário → 📅 Gerar Plano do Dia** (recomendado)\n"
-            "• Ou importe a planilha PPCP na aba **📂 2. Importar & Pneus em Trânsito**"
-        )
-        return
-
-    if tem_itin and tem_plano:
+    # Se há planilha PPCP importada, oferece modo alternativo
+    if plano:
         fonte = st.radio(
-            "Fonte do plano de produção:",
-            ["🗺️ Itinerário do Dia (automático)", "📂 Planilha PPCP (manual)"],
+            "Modo de visualização:",
+            ["🏭 Fila de Produção (automático)", "📂 Planilha PPCP (manual)"],
             horizontal=True,
         )
-        usar_itin = fonte.startswith("🗺️")
-    else:
-        usar_itin = tem_itin  # usa o que estiver disponível
+        if fonte.startswith("📂"):
+            _status_por_plano_ppcp(plano, df_banco)
+            return
 
-    # ── Modo Itinerário ───────────────────────────────────────────────────────
-    if usar_itin:
-        _status_por_itinerario(itin, df_banco)
-    else:
-        _status_por_plano_ppcp(plano, df_banco)
+    _status_por_itinerario(itin, df_banco)
 
 
-def _status_por_itinerario(itin: dict, df_banco: pd.DataFrame):
-    """Plano de produção gerado automaticamente a partir do itinerário do dia.
+def _status_por_itinerario(itin: dict | None, df_banco: pd.DataFrame):
+    """
+    Fila de produção PPCP correta:
 
-    Exibe APENAS OS em aberto (STATUS == 'Aguardando') — pneus que ainda não
-    entraram na linha de produção.  OS 'Em Produção' e 'Expedido' são omitidas
-    aqui porque já foram tratadas (biped na linha ou entregues ao cliente).
+    • Mostra TODOS os clientes com OS em STATUS='Aguardando' já no banco
+      (independente do itinerário — são os pneus fisicamente na fábrica)
+    • Usa o itinerário para calcular o PRAZO DE ENTREGA de cada cliente
+      (data da coleta + dias do prazo = deadline de produção)
+    • Ordena por urgência: vencido → urgente → atenção → ok → sem prazo
     """
 
-    data_itin = itin.get('data', '—')
-    mot_itin  = itin.get('motorista', '—')
-    paradas   = itin.get('paradas', [])
-
-    # ── Filtra o banco: apenas OS que NÃO entraram em produção ainda ──────────
-    df_aberto = df_banco[df_banco['STATUS'] == 'Aguardando'].copy()
-
-    total_banco  = len(df_banco)
+    # ── Snapshot do banco ─────────────────────────────────────────────────────
+    df_aberto   = df_banco[df_banco['STATUS'] == 'Aguardando'].copy()
+    total_banco = len(df_banco)
     total_aberto = len(df_aberto)
     ja_em_linha  = len(df_banco[df_banco['STATUS'] == 'Em Produção'])
     expedidos    = len(df_banco[df_banco['STATUS'] == 'Expedido'])
 
-    st.caption(
-        f"📅 Roteiro de **{data_itin}** | "
-        f"Motorista(s): **{mot_itin}** | "
-        f"**{len(paradas)} parada(s)** — "
-        f"exibindo apenas OS em aberto (**{total_aberto}** de {total_banco} | "
-        f"já na linha: {ja_em_linha} | expedidos: {expedidos})"
-    )
+    # ── Mapa de urgência construído a partir do itinerário ────────────────────
+    # Chave: _norm(nome_curto_itinerario) → { prazo, motorista, dias_restantes }
+    mapa_urgencia: dict[str, dict] = {}
+    data_itin_str = '—'
 
-    # Agrupa paradas por motorista (cada motorista = "linha" de produção)
-    por_motorista: dict[str, list] = {}
-    for p in paradas:
-        mot = (p.get('motorista') or 'SEM MOTORISTA').strip()
-        por_motorista.setdefault(mot, []).append(p)
+    if itin and itin.get('paradas'):
+        data_itin_str = itin.get('data', '—')
+        data_itin_obj: datetime.date | None = None
+        try:
+            data_itin_obj = datetime.datetime.strptime(data_itin_str, '%d/%m/%Y').date()
+        except Exception:
+            pass
 
-    cores = ['#1a5276', '#1e8449', '#784212', '#6c3483',
-             '#117a65', '#b7950b', '#922b21', '#17202a', '#0e6655']
+        for p in itin.get('paradas', []):
+            cli_itin  = (p.get('cliente')  or '').strip()
+            prazo_str = (p.get('prazo')    or '').strip()
+            motorista = (p.get('motorista') or '').strip()
+            if not cli_itin:
+                continue
 
-    tot_aguard = 0
+            # Extrai número de dias: "02 DIAS" → 2
+            dias: int | None = None
+            m_prazo = re.search(r'(\d+)\s*DIA', prazo_str.upper())
+            if m_prazo:
+                dias = int(m_prazo.group(1))
 
-    for idx, (motorista, paradas_mot) in enumerate(por_motorista.items()):
-        cor = cores[idx % len(cores)]
-        linhas = []
-        l_aguard = 0
+            # Deadline = data_coleta + dias; dias_restantes = deadline − hoje
+            dias_rest: int | None = None
+            if data_itin_obj is not None and dias is not None:
+                deadline  = data_itin_obj + datetime.timedelta(days=dias)
+                dias_rest = (deadline - datetime.date.today()).days
 
-        for i, p in enumerate(paradas_mot):
-            cli   = p.get('cliente', '')
-            prazo = p.get('prazo', '') or '—'
+            mapa_urgencia[_norm(cli_itin)] = {
+                'prazo':          prazo_str or '—',
+                'motorista':      motorista or '—',
+                'dias_restantes': dias_rest,
+            }
 
-            # Busca apenas nas OS em aberto (Aguardando)
-            os_cli = _buscar_os('', cli, df_aberto)
+    # ── Caption informativo ───────────────────────────────────────────────────
+    partes = []
+    if itin:
+        partes.append(f"📅 Itinerário de **{data_itin_str}** (referência de prazos)")
+    partes.append(f"**{total_aberto}** OS em aberto de {total_banco} total")
+    if ja_em_linha:
+        partes.append(f"🔄 {ja_em_linha} já na linha")
+    if expedidos:
+        partes.append(f"✅ {expedidos} expedidos")
+    if not itin:
+        partes.append("⚠️ Sem itinerário salvo — prazos não calculados")
+    st.caption(" | ".join(partes))
 
-            if os_cli.empty or 'STATUS' not in os_cli.columns:
-                aguard    = 0
-                idpedidos = '—'
-                # Verifica se há OS mas todas já estão em produção ou expedidas
-                os_total = _buscar_os('', cli, df_banco)
-                if os_total.empty:
-                    situ = '❌ Sem OS no banco'
-                else:
-                    em_prod = len(os_total[os_total['STATUS'] == 'Em Produção'])
-                    exped   = len(os_total[os_total['STATUS'] == 'Expedido'])
-                    if exped > 0 and em_prod == 0:
-                        situ = '✅ Expedido'
-                    else:
-                        situ = '🔄 Na linha (sem pendentes)'
+    if df_aberto.empty:
+        st.success("🎉 Nenhuma OS em aberto! Todos os pneus já entraram na linha de produção.")
+        return
+
+    # ── Agrupa por cliente (nome completo do banco) ───────────────────────────
+    linhas = []
+    for cli_full in df_aberto['CLIENTE'].dropna().unique():
+        os_cli = df_aberto[df_aberto['CLIENTE'] == cli_full]
+        aguard = len(os_cli)
+
+        # IDPEDIDOs únicos desta fila
+        ids_raw     = os_cli['IDPEDIDOPNEU'].dropna().apply(_norm_id).unique().tolist()
+        ids_validos = [x for x in ids_raw if x not in ('', 'nan', '0')]
+        idpedidos   = ' / '.join(ids_validos) if ids_validos else '—'
+
+        # Fuzzy match: nome curto do itinerário ⊂ nome completo do banco
+        cli_norm = _norm(cli_full)
+        urgencia: dict | None = None
+        for k_norm, v in mapa_urgencia.items():
+            if re.search(r'\b' + re.escape(k_norm) + r'\b', cli_norm):
+                urgencia = v
+                break
+
+        if urgencia:
+            dias_rest = urgencia['dias_restantes']
+            prazo     = urgencia['prazo']
+            motorista = urgencia['motorista']
+            if dias_rest is None:
+                prio_label, prio_ord = '🟡 No roteiro',         2
+            elif dias_rest < 0:
+                prio_label, prio_ord = f'🔴 VENCIDO ({abs(dias_rest)}d atrás)', 0
+            elif dias_rest == 0:
+                prio_label, prio_ord = '🔴 URGENTE (hoje)',     1
+            elif dias_rest == 1:
+                prio_label, prio_ord = '🔴 URGENTE (amanhã)',   1
+            elif dias_rest <= 3:
+                prio_label, prio_ord = f'🟡 ATENÇÃO ({dias_rest}d)', 2
             else:
-                aguard = len(os_cli)   # todos são 'Aguardando' (já filtrado)
+                prio_label, prio_ord = f'🟢 OK ({dias_rest}d)',  3
+        else:
+            prio_label, prio_ord = '⚪ Sem prazo', 4
+            prazo     = '—'
+            motorista = '—'
+            dias_rest = None
 
-                # Detecta IDPEDIDOs únicos das OS em aberto
-                ids_raw = (
-                    os_cli['IDPEDIDOPNEU']
-                    .dropna()
-                    .apply(_norm_id)
-                    .unique()
-                    .tolist()
-                )
-                ids_validos = [x for x in ids_raw if x not in ('', 'nan', '0')]
-                idpedidos   = ' / '.join(ids_validos) if ids_validos else '—'
-                situ        = '⏳ Aguardando produção'
+        linhas.append({
+            '_ord':       prio_ord,
+            '_dias':      dias_rest if dias_rest is not None else 999,
+            'Prioridade': prio_label,
+            'Cliente':    cli_full,
+            'IDPEDIDO':   idpedidos,
+            'OS Abertas': aguard,
+            'Prazo':      prazo,
+            'Motorista':  motorista,
+        })
 
-            l_aguard += aguard
+    # Ordena: mais urgente primeiro; empate → menor prazo → alfabético
+    df_lin = (
+        pd.DataFrame(linhas)
+        .sort_values(['_ord', '_dias', 'Cliente'])
+        .reset_index(drop=True)
+    )
+    df_exibir = df_lin.drop(columns=['_ord', '_dias'])
 
-            linhas.append({
-                'Parada':          i + 1,
-                'Cliente':         cli,
-                'IDPEDIDO':        idpedidos,
-                'Prazo':           prazo,
-                'OS em Aberto':    aguard,
-                'Situação':        situ,
-            })
+    # ── Métricas de urgência ──────────────────────────────────────────────────
+    n_urg    = len(df_lin[df_lin['_ord'] <= 1])
+    n_atenc  = len(df_lin[df_lin['_ord'] == 2])
+    n_ok     = len(df_lin[df_lin['_ord'] == 3])
+    n_sem_pz = len(df_lin[df_lin['_ord'] == 4])
 
-        tot_aguard += l_aguard
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("⏳ OS em Aberto",  total_aberto)
+    c2.metric("🔴 Urgentes",      n_urg,    help="Prazo vencido ou para hoje/amanhã")
+    c3.metric("🟡 Atenção",       n_atenc,  help="Prazo em até 3 dias ou no roteiro sem data")
+    c4.metric("⚪ Sem prazo",     n_sem_pz, help="Cliente não encontrado no itinerário")
 
-        # Só exibe bloco do motorista se houver pendências (aguardando > 0)
-        tem_pendencias = l_aguard > 0
-        cor_bloco = cor if tem_pendencias else '#555555'
-        label_extra = f'⏳ {l_aguard} a produzir' if tem_pendencias else '✅ Sem pendências'
-
-        st.markdown(
-            f"<div style='background:{cor_bloco};border-radius:6px;"
-            f"padding:8px 16px;margin:14px 0 4px;'>"
-            f"<h4 style='color:#fff;margin:0;'>"
-            f"🚛 {motorista} — {len(paradas_mot)} parada(s) | {label_extra}"
-            f"</h4></div>",
-            unsafe_allow_html=True,
-        )
-        # Mostra apenas clientes com OS em aberto em destaque; os sem pendência ficam cinza
-        if linhas:
-            df_lin = pd.DataFrame(linhas)
-            st.dataframe(df_lin, hide_index=True, use_container_width=True)
+    st.markdown("")
+    st.dataframe(df_exibir, hide_index=True, use_container_width=True)
 
     st.markdown("---")
-    st.metric("⏳ Total de OS em Aberto (a produzir hoje)", tot_aguard)
+    st.caption(
+        f"**{len(df_lin)} clientes** com OS em aberto | "
+        f"**{total_aberto} pneus** aguardando produção"
+    )
 
 
 def _status_por_plano_ppcp(plano: dict, df_banco: pd.DataFrame):
