@@ -1,0 +1,1971 @@
+{
+  "motoristas": {
+    "EVERTON": {
+      "SEGUNDA": [
+        {
+          "cliente": "AMBIENTAL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SHALON",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ITAIM",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "CORPOTEC",
+          "prazo": ""
+        },
+        {
+          "cliente": "ATT FERRAZ",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "RADIAL SUZANO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "NOVA OPÇÃO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "GALVÃO",
+          "prazo": ""
+        },
+        {
+          "cliente": "TIP BUSS",
+          "prazo": ""
+        }
+      ],
+      "TERCA": [
+        {
+          "cliente": "AMBIENTAL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SHALON",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "IMPERADOR",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "A.E CARVALHO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TASSI",
+          "prazo": ""
+        },
+        {
+          "cliente": "ATT MOGI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ATT GUARAREMA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "G2L",
+          "prazo": ""
+        },
+        {
+          "cliente": "GAFOR GUARULHOS",
+          "prazo": ""
+        }
+      ],
+      "QUARTA": [
+        {
+          "cliente": "AMBIENTAL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "BRAZ",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SHALON",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ITAIM",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "CORPOTEC",
+          "prazo": ""
+        },
+        {
+          "cliente": "ATT FERRAZ",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "RADIAL SUZANO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "NOVA OPÇÃO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "TIP BUSS",
+          "prazo": ""
+        }
+      ],
+      "QUINTA": [
+        {
+          "cliente": "AMBIENTAL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SHALON",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TASSI",
+          "prazo": ""
+        },
+        {
+          "cliente": "ATT MOGI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ATT GUARAREMA",
+          "prazo": ""
+        },
+        {
+          "cliente": "G2L",
+          "prazo": ""
+        },
+        {
+          "cliente": "GAFOR GUARULHOS",
+          "prazo": ""
+        },
+        {
+          "cliente": "GALVÃO",
+          "prazo": ""
+        }
+      ],
+      "SEXTA": [
+        {
+          "cliente": "AMBIENTAL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "BRAZ",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SHALON",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ATT FERRAZ",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "RADIAL SUZANO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "NOVA OPÇÃO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "A.E CARVALHO",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "ESPORADICO": [
+        {
+          "cliente": "BMX",
+          "prazo": ""
+        },
+        {
+          "cliente": "ANTONIO SALES",
+          "prazo": ""
+        },
+        {
+          "cliente": "FAUSTÃO",
+          "prazo": ""
+        },
+        {
+          "cliente": "TERRASSIS",
+          "prazo": ""
+        },
+        {
+          "cliente": "YPE ENGENHARIA",
+          "prazo": ""
+        },
+        {
+          "cliente": "TWA",
+          "prazo": ""
+        },
+        {
+          "cliente": "KORTE GERAL",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "SANTA CRUZ",
+          "prazo": ""
+        },
+        {
+          "cliente": "FRS LEILOS",
+          "prazo": ""
+        },
+        {
+          "cliente": "LAUTO",
+          "prazo": ""
+        },
+        {
+          "cliente": "NLOG",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "TRANSDUTRA",
+          "prazo": ""
+        }
+      ],
+      "ESPORADICO2": [
+        {
+          "cliente": "FERMIX",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "ACA",
+          "prazo": ""
+        },
+        {
+          "cliente": "AREIÃO AMAZONAS",
+          "prazo": ""
+        },
+        {
+          "cliente": "SOSAL",
+          "prazo": ""
+        },
+        {
+          "cliente": "EF",
+          "prazo": ""
+        },
+        {
+          "cliente": "VAMOS LOCAÇÃO",
+          "prazo": "05 DIAS"
+        },
+        {
+          "cliente": "VALEBETON",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "FREELANZA",
+          "prazo": ""
+        },
+        {
+          "cliente": "VILANUEVA",
+          "prazo": ""
+        },
+        {
+          "cliente": "RENOVAR",
+          "prazo": ""
+        },
+        {
+          "cliente": "M4",
+          "prazo": ""
+        },
+        {
+          "cliente": "VIAÇÃO COMETA",
+          "prazo": ""
+        }
+      ]
+    },
+    "RAFAEL": {
+      "SEGUNDA": [
+        {
+          "cliente": "NORTE BUSS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSPPASS",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "TERCA": [
+        {
+          "cliente": "NORTE BUSS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSPPASS",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "QUARTA": [
+        {
+          "cliente": "NORTE BUSS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSPPASS",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "QUINTA": [
+        {
+          "cliente": "NORTE BUSS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSPPASS",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "SEXTA": [
+        {
+          "cliente": "NORTE BUSS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSPPASS",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "ESPORADICO": [
+        {
+          "cliente": "SANTA BRIDGIDA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "FILIAL 3",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "URUBUPUNGA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "O.P.R",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "PROTEGE",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "BLUE ANGELS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "CONCRECITY",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "USICITY",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "INTERCITY",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "VALEBETON",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "POLIMIX",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "PH AGUA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "SALFENA",
+          "prazo": "03 DIAS"
+        }
+      ],
+      "ESPORADICO2": [
+        {
+          "cliente": "SHUNCK",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "GATTI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRUCK CAR",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ENGEILHA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "TRANSVIAS",
+          "prazo": "05 DIAS"
+        },
+        {
+          "cliente": "ALFA RODOBUS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "YES BRASIL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "DEL REY",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "NORTH MIX",
+          "prazo": "02 DIAS"
+        }
+      ]
+    },
+    "EDUARDO": {
+      "SEGUNDA": [
+        {
+          "cliente": "LUFT",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "INTEC",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "BB JANDIRA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "BLR",
+          "prazo": "03 DIAS"
+        }
+      ],
+      "TERCA": [
+        {
+          "cliente": "JTP",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "RR PASTRO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "BB ITAPEVI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSLUTE",
+          "prazo": "01 DIA"
+        }
+      ],
+      "QUARTA": [
+        {
+          "cliente": "LUFT",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "INTEC",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "EMP CARAPICUIBA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "BB JANDIRA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SHALLON",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "QUINTA": [
+        {
+          "cliente": "JTP",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "RR PASTRO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "BB ITAPEVI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "RALIP",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "BB BARUERI",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "SEXTA": [
+        {
+          "cliente": "N&LOG",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "BB JANDIRA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "LUFT",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "INTEC",
+          "prazo": "01 DIA"
+        }
+      ],
+      "ESPORADICO": [
+        {
+          "cliente": "AREIAITA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "EXPRESSO SULAMERICANO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "JUMBO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "LOCA VARGEM",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "ENGEZ",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "POLIMIX SANTANA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "POLIMIX B3 JJ",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "VIAÇÃO OSASCO MATRIZ",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "CONSORCIO NP",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "MANTOAN",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SUPERMERCADO CASTELO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ROGERIO CESARIO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "AMONEX",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSPORTE EXPRESS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TAC",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "MACEDO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSMAFRAN",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ECOMIX",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "EBB",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "GAFOR",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "TPT LOG",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "MATERIAIS SOUZA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "VECTOR",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "BETON LOG",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "CECCHINEL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "BENICIO",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "ESPORADICO2": [
+        {
+          "cliente": "CISNE BRANCO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "GIAMIX",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "MAMUTH",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "NENA",
+          "prazo": "05 DIAS"
+        },
+        {
+          "cliente": "POLIMIX BR",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "BOLIMIX B1",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "CORAL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TECIPAR",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "RFC",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "MILLENIUM",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "METROFILE",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SOLUÇÕES",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "PRC",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRR",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "CONCREUNI",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "INDUSPOL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "FORTE",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSNILMAN",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "MUTINGA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANS PASAREDO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "MEGA FRIO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "POLIMIX D1",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "LEMAR",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "EALOG",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "VIGENTE",
+          "prazo": "07 DIAS"
+        },
+        {
+          "cliente": "TERRAPLANAGEM",
+          "prazo": "05 DIAS"
+        }
+      ]
+    },
+    "RAILDO": {
+      "SEGUNDA": [
+        {
+          "cliente": "BRASPRESS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MRT",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "JOMED",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "MARAJA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "NOVA BELEM",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "EXPRESSO VALE",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TCM LOGISTICA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "PACIFICO LOGISTICA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "EVIDENCIA LOGISTICA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "SR LOGISTICA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "QUEFIRA LOGISTICA",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "TERCA": [
+        {
+          "cliente": "MIRASSOL PINDAMONHANGABA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO JACAREI",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "JACAREI TRANSPORTES",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "ABC TRANSPORTES",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "FL BRASIL",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MANDALOG",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "EXPRESSO PAJUCARA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "LAYRA LUYZA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "YAMAHA",
+          "prazo": "01 DIA"
+        }
+      ],
+      "QUARTA": [
+        {
+          "cliente": "BRASPRESS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MRT",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "JOMED",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "MARAJA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "NOVA BELEM",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "EXPRESSO VALE",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TCM LOGISTICA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "PACIFICO LOGISTICA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "EVIDENCIA LOGISTICA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SR LOGISTICA",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "QUINTA": [
+        {
+          "cliente": "MIRASSOL PINDAMONHANGABA",
+          "prazo": ""
+        },
+        {
+          "cliente": "VIAÇÃO JACAREI",
+          "prazo": ""
+        },
+        {
+          "cliente": "JACAREI TRANSPORTES",
+          "prazo": ""
+        },
+        {
+          "cliente": "ABC TRANSPORTES",
+          "prazo": ""
+        },
+        {
+          "cliente": "FL BRASIL",
+          "prazo": ""
+        },
+        {
+          "cliente": "ALCOOL SANTA CRUZ",
+          "prazo": ""
+        },
+        {
+          "cliente": "LAYRA LUYZA",
+          "prazo": ""
+        },
+        {
+          "cliente": "YAMAHA",
+          "prazo": ""
+        },
+        {
+          "cliente": "PROTEGE SÃO JOSÉ DOS CAMPOS",
+          "prazo": ""
+        }
+      ],
+      "SEXTA": [
+        {
+          "cliente": "BRASPRESS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MRT",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "JOMED",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MARAJA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "NOVA BELEM",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "EXPRESSO VALE",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "TCM LOGISTICA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "JOSE ROMILDO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "QUEFIRA",
+          "prazo": "03 DIAS"
+        }
+      ],
+      "ESPORADICO": [
+        {
+          "cliente": "VALEBETON GUARULHOS",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "HIPER TRANSPORTE",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "CARVAS",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "INFRAESTRUTURA ELOS",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "IMEDIATO TRANSPORTE",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "RENOVAR PINDA",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "SALVADOR LOGISTICA",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "MJS",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "AMABELLI ADM",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "FASSIL TRUCK",
+          "prazo": "04 DIAS"
+        }
+      ]
+    },
+    "RENAN": {
+      "SEGUNDA": [
+        {
+          "cliente": "BORELLI",
+          "prazo": "02DIAS"
+        },
+        {
+          "cliente": "EXPRESS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSZOIÃO",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "PIRATININGA",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "TERCA": [
+        {
+          "cliente": "BORELLI",
+          "prazo": "02DIAS"
+        },
+        {
+          "cliente": "EXPRESS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "COPERCEG",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TOMÉ ENGENHARIA",
+          "prazo": "03 DIAS"
+        }
+      ],
+      "QUARTA": [
+        {
+          "cliente": "BORELLI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "EXPRESS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "PAULISTA EXPRESS",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "QUINTA": [
+        {
+          "cliente": "BORELLI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "EXPRESS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "PIRATININGA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "COPERCEG",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TOME ENGENHARIA",
+          "prazo": "03 DIAS"
+        }
+      ],
+      "SEXTA": [
+        {
+          "cliente": "BORELLI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "EXPRESS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "CORPUS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "ECOURBIS LESTE",
+          "prazo": "01 DIA"
+        }
+      ],
+      "ESPORADICO": [
+        {
+          "cliente": "KOLLETUS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "AVE&SABOR",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "LOG 08",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "CONCRESERV",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "VELOCE",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSLIX",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "GABARDO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "PROTEGE",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "TAM",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "ENIND",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "FF TRANSPORTES",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "AAZ ALIMENTOS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "COLOR TRASH",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "AL PNEUS",
+          "prazo": "05 DIAS"
+        },
+        {
+          "cliente": "PLASTICOS RENATO",
+          "prazo": "02 DIAS"
+        }
+      ]
+    },
+    "WELTON": {
+      "SEGUNDA": [
+        {
+          "cliente": "VIAÇÃO TRANSCAP",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO CAMPO BELO G1",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO CAMPO BELO G2",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO GATUSA",
+          "prazo": "01 DIA"
+        }
+      ],
+      "TERCA": [
+        {
+          "cliente": "VIAÇÃO TRANSCAP",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO CAMPO BELO G1",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO CAMPO BELO G2",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO GATUSA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO METROPOLITANA PINEDO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "SUSSANTUR",
+          "prazo": "02 DIAS"
+        }
+      ],
+      "QUARTA": [
+        {
+          "cliente": "VIAÇÃO METROPOLITANA MBOI MIRIM",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO TRANSCAP",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO GATUSA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO CAMPO BELO G1",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO CAMPO BELO G2",
+          "prazo": "01 DIA"
+        }
+      ],
+      "QUINTA": [
+        {
+          "cliente": "VIAÇÃO TRANSCAP",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO CAMPO BELO G1",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO CAMPO BELO G2",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO GATUSA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO METROPOLITANA PINEDO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "VIAÇÃO TRANSWOLF SOCORRO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "VIAÇÃO TRANSWOLF FILIAL",
+          "prazo": "03 DIAS"
+        }
+      ],
+      "SEXTA": [
+        {
+          "cliente": "VIAÇÃO METROPOLITANA MBOI MIRIM",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO TRANSCAP",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO GATUSA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO CAMPO BELO G2",
+          "prazo": "01 DIA"
+        }
+      ],
+      "ESPORADICO": [
+        {
+          "cliente": "SHIFT",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ADVANCED",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "NORBRASIL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ECOURBIS SUL",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MFMIX",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ECO SAMPA-SCK",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "POLIMIX SANTO AMARO",
+          "prazo": "03 DIAS"
+        }
+      ]
+    },
+    "ROGERIO": {
+      "SEGUNDA": [
+        {
+          "cliente": "RG LOG",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "COVRE",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "SUPERLAMINAÇÃO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MARLI CASTELI",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "PROAIR",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "CORPUS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "RFR",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "TRANSVAL",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MORADA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "ARARAQUARA",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "O.P.R LIMEIRA",
+          "prazo": "04 DIAS"
+        }
+      ],
+      "TERCA": [
+        {
+          "cliente": "PAULINO NASCIMENTO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "DEPOSITO NASCIMENTO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "BR ÁGUA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "BOLATER",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "TEXTIL SERRANO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "POLIMIX COTIA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "BIOMIX",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "SEMITRANS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "BAMONTE",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "CONSORCIO NOVO SOROCABA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "NLA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "OXIGÊNIO CAROL",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "CITY",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "LOGNET",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "EPPO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "PIRO",
+          "prazo": "03 DIAS"
+        }
+      ],
+      "QUARTA": [
+        {
+          "cliente": "DNP",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MTC(SER PNEUS)",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "CORPUS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "RFR/INDY LOG",
+          "prazo": "03 DIAS"
+        }
+      ],
+      "QUINTA": [
+        {
+          "cliente": "RG LOG",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "COVRE",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "SUPERLAMINAÇÃO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MARLI CASTELI",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "PROAIR",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "CORPUS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "RFR",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "TRANSVAL",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MORADA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "ARARAQUARA",
+          "prazo": "04 DIAS"
+        },
+        {
+          "cliente": "O.P.R LIMEIRA",
+          "prazo": "04 DIAS"
+        }
+      ],
+      "SEXTA": [
+        {
+          "cliente": "PAULINO NASCIMENTO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "DEPOSITO NASCIMENTO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "BR ÁGUA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "BOLATER",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "TEXTIL SERRANO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "POLIMIX COTIA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "BIOMIX",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "SEMITRANS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "BAMONTE",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "CONSORCIO NOVO SOROCABA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "NLA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "OXIGÊNIO CAROL",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "CITY",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "LOGNET",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "EPPO",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "PIRO",
+          "prazo": "03 DIAS"
+        }
+      ]
+    },
+    "WASHINGTON": {
+      "SEGUNDA": [
+        {
+          "cliente": "CONCRETIZA",
+          "prazo": "05 DIAS"
+        },
+        {
+          "cliente": "MSG",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "AA ALTERNATIVA",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "EDUARDO PEREIRA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "NEW MRDK",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TECMAR",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "GAB TRANSPORTES",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TRANSFERRARI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "GUEDES AMORIM",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VALEBETON",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "MULTILIXO TABOÃO",
+          "prazo": "01 DIA"
+        }
+      ],
+      "TERCA": [
+        {
+          "cliente": "GAB",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TSA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TECMAR",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "FASSINA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TERRA NOVA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSPARENCY",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "CITY INTERMODAL",
+          "prazo": "05 DIAS"
+        }
+      ],
+      "QUARTA": [
+        {
+          "cliente": "TECMAR",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "GAB TRANSPORTES",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TRANSFERRARI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "GUEDES AMORIM",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VALEBETON",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "TRANSITO LIVRE",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "MULTILIXO GUARULHOS",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TRES TRANSPORTES",
+          "prazo": "01 DIA"
+        }
+      ],
+      "QUINTA": [
+        {
+          "cliente": "GAB TRANSPORTES",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TSA TRANSPORTES",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TECMAR",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "FASSINA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TERRA NOVA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSPARENCY TRANSPORTES",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "CITY INTERMODAL",
+          "prazo": "05 DIAS"
+        }
+      ],
+      "SEXTA": [
+        {
+          "cliente": "CONCRETIZA",
+          "prazo": "05 DIAS"
+        },
+        {
+          "cliente": "MSG",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TECMAR",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "GAB TRANSPORTES",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TRANSFERRARI",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TRANSITO LIVRE",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "MULTILIXO GUARULHOS",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TRES TRANSPORTES",
+          "prazo": "01 DIA"
+        }
+      ],
+      "ESPORADICO": [
+        {
+          "cliente": "SANTOS CONSTRUTORA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "ASA EXPRESS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "UNIMODAL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "HIPERCOM",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "RG LOG",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "MIRASSOL CUBATÃO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "AMBIPAR",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "COOPERCARGA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "LOCAL INDUSTRIAL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "MIRASSOL GUARULHOS",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "PROAIR",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "VALEBETON EMBU",
+          "prazo": "02 DIAS"
+        }
+      ]
+    },
+    "ELIANDRO": {
+      "SEGUNDA": [
+        {
+          "cliente": "BARBIERI",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "BRASIL ROSSO",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO ITUPEVA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "AMBIPAR",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "CINTIA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "BORRACHARIA DO BAIXINHO",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TRANS HAYAKU",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TERRASIM CAMPINAS",
+          "prazo": "01 DIA"
+        }
+      ],
+      "TERCA": [
+        {
+          "cliente": "BIO PETROLEO",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "JESMERI",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TRANSPORTE VERBA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "FENIX",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "LM TRANSPORTES",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "SUPERGASBRAS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "OPERLOG",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "FL BRASIL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SÃO JOÃO",
+          "prazo": "01 DIA"
+        }
+      ],
+      "QUARTA": [
+        {
+          "cliente": "BARBIERI",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "BRASIL ROSSO",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO ITUPEVA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "AMBIPAR",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "CINTIA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "BORRACHARIA DO BAIXINHO",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TRANS HAYAKU",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TERRASIM CAMPINAS",
+          "prazo": "01 DIA"
+        }
+      ],
+      "QUINTA": [
+        {
+          "cliente": "BIO PETROLEO",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "JESMERI",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TRANSPORTE VERBA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "FENIX",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "LM TRANSPORTES",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "SUPERGASBRAS",
+          "prazo": "03 DIAS"
+        },
+        {
+          "cliente": "OPERLOG",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "FL BRASIL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "SÃO JOÃO",
+          "prazo": "01 DIA"
+        }
+      ],
+      "SEXTA": [
+        {
+          "cliente": "BARBIERI",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "BRASIL ROSSO",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "VIAÇÃO ITUPEVA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "AMBIPAR",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "CINTIA",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "BORRACHARIA DO BAIXINHO",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TRANS HAYAKU",
+          "prazo": "01 DIA"
+        },
+        {
+          "cliente": "TERRASIM CAMPINAS",
+          "prazo": "01 DIA"
+        }
+      ],
+      "ESPORADICO": [
+        {
+          "cliente": "TCM",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "TERRA BRASIL",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "RAPIDO VINHEDO",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "DEMARC",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "LOGMAN",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "VIAÇÃO ISABELA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "LG BORRACHARIA",
+          "prazo": "02 DIAS"
+        },
+        {
+          "cliente": "EXP.SANMAR",
+          "prazo": "02 DIAS"
+        }
+      ]
+    }
+  },
+  "_schema": 1
+}
