@@ -604,17 +604,155 @@ def _aba_importar(df_banco: pd.DataFrame):
 def _aba_clientes_em_linha(df_banco: pd.DataFrame):
     st.subheader("🏭 Status por Cliente (conforme Programação)")
 
+    # ── Tenta carregar o itinerário do dia ────────────────────────────────────
+    itin = None
+    try:
+        from modules.itinerario import _carregar_itinerario
+        raw = _carregar_itinerario()
+        if raw and raw.get('paradas'):
+            itin = raw
+    except Exception:
+        pass
+
+    # ── Tenta carregar plano PPCP importado ───────────────────────────────────
     plano = _carregar_plano()
-    if not plano:
+
+    tem_itin  = itin  is not None
+    tem_plano = plano is not None
+
+    # ── Escolha da fonte ──────────────────────────────────────────────────────
+    if not tem_itin and not tem_plano:
         st.info(
-            "Nenhuma programação carregada. Importe a planilha na aba "
-            "**📂 2. Importar & Pneus em Trânsito** para acompanhar o status."
+            "Nenhuma programação disponível.\n\n"
+            "• Gere o plano automático em **🗺️ Itinerário → 📅 Gerar Plano do Dia** (recomendado)\n"
+            "• Ou importe a planilha PPCP na aba **📂 2. Importar & Pneus em Trânsito**"
         )
         return
 
+    if tem_itin and tem_plano:
+        fonte = st.radio(
+            "Fonte do plano de produção:",
+            ["🗺️ Itinerário do Dia (automático)", "📂 Planilha PPCP (manual)"],
+            horizontal=True,
+        )
+        usar_itin = fonte.startswith("🗺️")
+    else:
+        usar_itin = tem_itin  # usa o que estiver disponível
+
+    # ── Modo Itinerário ───────────────────────────────────────────────────────
+    if usar_itin:
+        _status_por_itinerario(itin, df_banco)
+    else:
+        _status_por_plano_ppcp(plano, df_banco)
+
+
+def _status_por_itinerario(itin: dict, df_banco: pd.DataFrame):
+    """Plano de produção gerado automaticamente a partir do itinerário do dia."""
+
+    data_itin = itin.get('data', '—')
+    mot_itin  = itin.get('motorista', '—')
+    paradas   = itin.get('paradas', [])
+
+    st.caption(
+        f"📅 Roteiro de **{data_itin}** | "
+        f"Motorista(s): **{mot_itin}** | "
+        f"**{len(paradas)} parada(s)** detectadas automaticamente pelo itinerário"
+    )
+
+    # Agrupa paradas por motorista (cada motorista = "linha" de produção)
+    por_motorista: dict[str, list] = {}
+    for p in paradas:
+        mot = (p.get('motorista') or 'SEM MOTORISTA').strip()
+        por_motorista.setdefault(mot, []).append(p)
+
+    cores = ['#1a5276', '#1e8449', '#784212', '#6c3483',
+             '#117a65', '#b7950b', '#922b21', '#17202a', '#0e6655']
+
+    tot_aguard = tot_prod = tot_exped = 0
+
+    for idx, (motorista, paradas_mot) in enumerate(por_motorista.items()):
+        cor = cores[idx % len(cores)]
+        linhas = []
+        l_aguard = l_prod = l_exped = 0
+
+        for i, p in enumerate(paradas_mot):
+            cli   = p.get('cliente', '')
+            prazo = p.get('prazo', '')  or '—'
+
+            # Busca OS no banco pelo nome do cliente (fuzzy, sem IDPEDIDO)
+            os_cli = _buscar_os('', cli, df_banco)
+
+            if os_cli.empty or 'STATUS' not in os_cli.columns:
+                aguard = prod = exped = 0
+                idpedidos = '—'
+                situ = '❌ Sem OS no banco'
+            else:
+                aguard = len(os_cli[os_cli['STATUS'] == 'Aguardando'])
+                prod   = len(os_cli[os_cli['STATUS'] == 'Em Produção'])
+                exped  = len(os_cli[os_cli['STATUS'] == 'Expedido'])
+                total  = aguard + prod + exped
+
+                # Detecta IDPEDIDOs únicos presentes no banco para este cliente
+                ids_raw = (
+                    os_cli['IDPEDIDOPNEU']
+                    .dropna()
+                    .apply(_norm_id)
+                    .unique()
+                    .tolist()
+                )
+                ids_validos = [x for x in ids_raw if x not in ('', 'nan', '0')]
+                idpedidos = ' / '.join(ids_validos) if ids_validos else '—'
+
+                if total == 0:
+                    situ = '❌ Sem OS no banco'
+                elif aguard == 0 and prod == 0:
+                    situ = '✅ Expedido'
+                elif prod > 0 and aguard == 0:
+                    situ = '🔄 Todos na linha'
+                elif prod > 0:
+                    situ = '🔄 Em produção'
+                else:
+                    situ = '⏳ Aguardando'
+
+            l_aguard += aguard; l_prod += prod; l_exped += exped
+
+            linhas.append({
+                'Parada':       i + 1,
+                'Cliente':      cli,
+                'IDPEDIDO':     idpedidos,
+                'Prazo':        prazo,
+                'Aguardando':   aguard,
+                'Em Produção':  prod,
+                'Expedido':     exped,
+                'Situação':     situ,
+            })
+
+        tot_aguard += l_aguard; tot_prod += l_prod; tot_exped += l_exped
+
+        st.markdown(
+            f"<div style='background:{cor};border-radius:6px;"
+            f"padding:8px 16px;margin:14px 0 4px;'>"
+            f"<h4 style='color:#fff;margin:0;'>"
+            f"🚛 {motorista} — {len(paradas_mot)} parada(s) | "
+            f"⏳ {l_aguard} aguard. | 🔄 {l_prod} produção | ✅ {l_exped} exped."
+            f"</h4></div>",
+            unsafe_allow_html=True,
+        )
+        st.dataframe(pd.DataFrame(linhas), hide_index=True, use_container_width=True)
+
+    st.markdown("---")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("⏳ Aguardando",  tot_aguard)
+    c2.metric("🔄 Em Produção", tot_prod)
+    c3.metric("✅ Expedido",    tot_exped)
+
+
+def _status_por_plano_ppcp(plano: dict, df_banco: pd.DataFrame):
+    """Plano de produção lido da planilha PPCP importada manualmente."""
+
     st.caption(f"📅 Programação de **{plano.get('data', '—')}**")
 
-    # Carrega prioridade do itinerário (pode estar vazio se não houver roteiro salvo)
+    # Carrega prioridade do itinerário (opcional — enriquece a coluna Parada)
     try:
         from modules.itinerario import carregar_mapa_prioridade
         mapa_parada = carregar_mapa_prioridade()
@@ -680,7 +818,6 @@ def _aba_clientes_em_linha(df_banco: pd.DataFrame):
         )
         st.dataframe(pd.DataFrame(linhas), hide_index=True, use_container_width=True)
 
-    # Resumo geral
     st.markdown("---")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("📋 Programado", tot_prog)
