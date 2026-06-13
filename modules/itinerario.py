@@ -803,10 +803,10 @@ def _aba_painel():
 
     for i, p in enumerate(paradas):
         cli    = p['cliente']
-        os_cli = df[df['CLIENTE'] == cli]
-        aguard = len(os_cli[os_cli['STATUS'] == 'Aguardando'])
-        prod   = len(os_cli[os_cli['STATUS'] == 'Em Produção'])
-        exped  = len(os_cli[os_cli['STATUS'] == 'Expedido'])
+        os_cli = _buscar_cli_banco(cli, df)
+        aguard = len(os_cli[os_cli['STATUS'] == 'Aguardando'])   if not os_cli.empty else 0
+        prod   = len(os_cli[os_cli['STATUS'] == 'Em Produção'])  if not os_cli.empty else 0
+        exped  = len(os_cli[os_cli['STATUS'] == 'Expedido'])     if not os_cli.empty else 0
         total  = aguard + prod + exped
         pct    = round((prod + exped) / total * 100) if total > 0 else 0
 
@@ -850,10 +850,10 @@ def _aba_painel():
         obs  = p.get('obs', '') or ''
         mot  = p.get('motorista', '') or ''
 
-        os_cli = df[df['CLIENTE'] == cli]
-        aguard = os_cli[os_cli['STATUS'] == 'Aguardando']
-        prod   = os_cli[os_cli['STATUS'] == 'Em Produção']
-        exped  = os_cli[os_cli['STATUS'] == 'Expedido']
+        os_cli = _buscar_cli_banco(cli, df)
+        aguard = os_cli[os_cli['STATUS'] == 'Aguardando']        if not os_cli.empty else pd.DataFrame()
+        prod   = os_cli[os_cli['STATUS'] == 'Em Produção']       if not os_cli.empty else pd.DataFrame()
+        exped  = os_cli[os_cli['STATUS'] == 'Expedido']          if not os_cli.empty else pd.DataFrame()
         total  = len(os_cli)
         pct    = round((len(prod) + len(exped)) / total * 100) if total > 0 else 0
         emoji  = '✅' if pct == 100 else ('🔄' if pct >= 50 else '⏳')
