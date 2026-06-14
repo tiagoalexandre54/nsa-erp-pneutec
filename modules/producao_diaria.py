@@ -677,10 +677,15 @@ def _status_por_itinerario(itin: dict | None, df_banco: pd.DataFrame):
             m = re.search(r'(\d+)\s*DIA', prazo_str.upper())
             if m:
                 dias = int(m.group(1))
-            mapa_prazo[_norm(cli_itin)] = {
+            # Indexa pelo PRIMEIRO nome do itinerário (ex: "PAULINO" de "PAULINO NASCIMENTO")
+            palavras_itin = _norm(cli_itin).split()
+            if not palavras_itin:
+                continue
+            mapa_prazo[palavras_itin[0]] = {
                 'prazo_dias': dias,
                 'prazo_str':  prazo_str or '—',
                 'motorista':  motorista or '—',
+                'nome_itin':  cli_itin,
             }
 
     # ── Caption informativo ───────────────────────────────────────────────────
@@ -720,13 +725,11 @@ def _status_por_itinerario(itin: dict | None, df_banco: pd.DataFrame):
             data_coleta_obj = min(datas_validas)
         data_coleta_str = data_coleta_obj.strftime('%d/%m/%Y') if data_coleta_obj else '—'
 
-        # Fuzzy match com mapa de prazo
-        cli_norm   = _norm(cli_full)
+        # Match por primeiro nome: "PAULINO DE OLIVEIRA..." → "PAULINO"
+        cli_palavras = _norm(cli_full).split()
         prazo_info: dict | None = None
-        for k_norm, v in mapa_prazo.items():
-            if re.search(r'\b' + re.escape(k_norm) + r'\b', cli_norm):
-                prazo_info = v
-                break
+        if cli_palavras:
+            prazo_info = mapa_prazo.get(cli_palavras[0])
 
         prazo_dias = prazo_info['prazo_dias'] if prazo_info else None
         prazo_str  = prazo_info['prazo_str']  if prazo_info else '—'
