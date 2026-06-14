@@ -630,159 +630,209 @@ def _aba_clientes_em_linha(df_banco: pd.DataFrame):
     _status_por_itinerario(itin, df_banco)
 
 
+def _parse_data(s: str) -> datetime.date | None:
+    """Converte string de data (dd/mm/yyyy ou variantes) para date. Retorna None se falhar."""
+    try:
+        dt = pd.to_datetime(str(s).strip(), dayfirst=True, errors='coerce')
+        return dt.date() if pd.notna(dt) else None
+    except Exception:
+        return None
+
+
 def _status_por_itinerario(itin: dict | None, df_banco: pd.DataFrame):
     """
-    Fila de produção PPCP correta:
+    Fila de produção PPCP — lógica FIFO correta:
 
-    • Mostra TODOS os clientes com OS em STATUS='Aguardando' já no banco
-      (independente do itinerário — são os pneus fisicamente na fábrica)
-    • Usa o itinerário para calcular o PRAZO DE ENTREGA de cada cliente
-      (data da coleta + dias do prazo = deadline de produção)
-    • Ordena por urgência: vencido → urgente → atenção → ok → sem prazo
+    1. Mostra TODOS os clientes com OS em STATUS='Aguardando' (pneus na fábrica)
+    2. Calcula Data de Produção = Data Coleta + Prazo do cliente
+    3. Status: "Fifo – Atrasado" se hoje > Data Produção; "Dentro do prazo" se não
+    4. Ordena: Atrasados primeiro (FIFO por coleta), depois no prazo (FIFO por coleta)
+    5. Atribui Fila 1, 2, 3...
+    6. Entrada na linha: atrasados até 09:00; no prazo até 13:00
     """
 
+    hoje = datetime.date.today()
+
     # ── Snapshot do banco ─────────────────────────────────────────────────────
-    df_aberto   = df_banco[df_banco['STATUS'] == 'Aguardando'].copy()
-    total_banco = len(df_banco)
+    df_aberto    = df_banco[df_banco['STATUS'] == 'Aguardando'].copy()
+    total_banco  = len(df_banco)
     total_aberto = len(df_aberto)
     ja_em_linha  = len(df_banco[df_banco['STATUS'] == 'Em Produção'])
     expedidos    = len(df_banco[df_banco['STATUS'] == 'Expedido'])
 
-    # ── Mapa de urgência construído a partir do itinerário ────────────────────
-    # Chave: _norm(nome_curto_itinerario) → { prazo, motorista, dias_restantes }
-    mapa_urgencia: dict[str, dict] = {}
+    # ── Mapa de prazo do itinerário ───────────────────────────────────────────
+    # _norm(nome_curto) → { prazo_dias, prazo_str, motorista }
+    mapa_prazo: dict[str, dict] = {}
     data_itin_str = '—'
 
     if itin and itin.get('paradas'):
         data_itin_str = itin.get('data', '—')
-        data_itin_obj: datetime.date | None = None
-        try:
-            data_itin_obj = datetime.datetime.strptime(data_itin_str, '%d/%m/%Y').date()
-        except Exception:
-            pass
-
         for p in itin.get('paradas', []):
             cli_itin  = (p.get('cliente')  or '').strip()
             prazo_str = (p.get('prazo')    or '').strip()
             motorista = (p.get('motorista') or '').strip()
             if not cli_itin:
                 continue
-
-            # Extrai número de dias: "02 DIAS" → 2
             dias: int | None = None
-            m_prazo = re.search(r'(\d+)\s*DIA', prazo_str.upper())
-            if m_prazo:
-                dias = int(m_prazo.group(1))
-
-            # Deadline = data_coleta + dias; dias_restantes = deadline − hoje
-            dias_rest: int | None = None
-            if data_itin_obj is not None and dias is not None:
-                deadline  = data_itin_obj + datetime.timedelta(days=dias)
-                dias_rest = (deadline - datetime.date.today()).days
-
-            mapa_urgencia[_norm(cli_itin)] = {
-                'prazo':          prazo_str or '—',
-                'motorista':      motorista or '—',
-                'dias_restantes': dias_rest,
+            m = re.search(r'(\d+)\s*DIA', prazo_str.upper())
+            if m:
+                dias = int(m.group(1))
+            mapa_prazo[_norm(cli_itin)] = {
+                'prazo_dias': dias,
+                'prazo_str':  prazo_str or '—',
+                'motorista':  motorista or '—',
             }
 
     # ── Caption informativo ───────────────────────────────────────────────────
     partes = []
     if itin:
-        partes.append(f"📅 Itinerário de **{data_itin_str}** (referência de prazos)")
-    partes.append(f"**{total_aberto}** OS em aberto de {total_banco} total")
-    if ja_em_linha:
-        partes.append(f"🔄 {ja_em_linha} já na linha")
-    if expedidos:
-        partes.append(f"✅ {expedidos} expedidos")
+        partes.append(f"📅 Itinerário de **{data_itin_str}**")
+    partes.append(f"**{total_aberto}** OS aguardando | 🔄 {ja_em_linha} na linha | ✅ {expedidos} expedidos")
     if not itin:
-        partes.append("⚠️ Sem itinerário salvo — prazos não calculados")
+        partes.append("⚠️ Sem itinerário — prazos não calculados")
     st.caption(" | ".join(partes))
 
     if df_aberto.empty:
         st.success("🎉 Nenhuma OS em aberto! Todos os pneus já entraram na linha de produção.")
         return
 
-    # ── Agrupa por cliente (nome completo do banco) ───────────────────────────
+    # ── Monta a fila PPCP por cliente ─────────────────────────────────────────
     linhas = []
+
     for cli_full in df_aberto['CLIENTE'].dropna().unique():
         os_cli = df_aberto[df_aberto['CLIENTE'] == cli_full]
-        aguard = len(os_cli)
+        qtd    = len(os_cli)
 
-        # IDPEDIDOs únicos desta fila
+        # IDPEDIDOs únicos
         ids_raw     = os_cli['IDPEDIDOPNEU'].dropna().apply(_norm_id).unique().tolist()
         ids_validos = [x for x in ids_raw if x not in ('', 'nan', '0')]
         idpedidos   = ' / '.join(ids_validos) if ids_validos else '—'
 
-        # Fuzzy match: nome curto do itinerário ⊂ nome completo do banco
-        cli_norm = _norm(cli_full)
-        urgencia: dict | None = None
-        for k_norm, v in mapa_urgencia.items():
+        # Data de coleta = DATA_ENTRADA mais antiga das OS deste cliente
+        data_coleta_obj: datetime.date | None = None
+        datas_validas = [
+            _parse_data(d)
+            for d in os_cli['DATA_ENTRADA'].dropna()
+            if str(d).strip() not in ('', 'nan')
+        ]
+        datas_validas = [d for d in datas_validas if d is not None]
+        if datas_validas:
+            data_coleta_obj = min(datas_validas)
+        data_coleta_str = data_coleta_obj.strftime('%d/%m/%Y') if data_coleta_obj else '—'
+
+        # Fuzzy match com mapa de prazo
+        cli_norm   = _norm(cli_full)
+        prazo_info: dict | None = None
+        for k_norm, v in mapa_prazo.items():
             if re.search(r'\b' + re.escape(k_norm) + r'\b', cli_norm):
-                urgencia = v
+                prazo_info = v
                 break
 
-        if urgencia:
-            dias_rest = urgencia['dias_restantes']
-            prazo     = urgencia['prazo']
-            motorista = urgencia['motorista']
-            if dias_rest is None:
-                prio_label, prio_ord = '🟡 No roteiro',         2
-            elif dias_rest < 0:
-                prio_label, prio_ord = f'🔴 VENCIDO ({abs(dias_rest)}d atrás)', 0
-            elif dias_rest == 0:
-                prio_label, prio_ord = '🔴 URGENTE (hoje)',     1
-            elif dias_rest == 1:
-                prio_label, prio_ord = '🔴 URGENTE (amanhã)',   1
-            elif dias_rest <= 3:
-                prio_label, prio_ord = f'🟡 ATENÇÃO ({dias_rest}d)', 2
+        prazo_dias = prazo_info['prazo_dias'] if prazo_info else None
+        prazo_str  = prazo_info['prazo_str']  if prazo_info else '—'
+        motorista  = prazo_info['motorista']   if prazo_info else '—'
+
+        # Data de produção = Data Coleta + Prazo
+        data_prod_obj: datetime.date | None = None
+        if data_coleta_obj and prazo_dias is not None:
+            data_prod_obj = data_coleta_obj + datetime.timedelta(days=prazo_dias)
+        data_prod_str = data_prod_obj.strftime('%d/%m/%Y') if data_prod_obj else '—'
+
+        # ── Status FIFO ───────────────────────────────────────────────────────
+        if data_prod_obj is not None:
+            if hoje > data_prod_obj:
+                status_ppcp   = 'Fifo – Atrasado'
+                entrada_linha = 'Até 09:00'
+                data_entrega  = hoje.strftime('%d/%m/%Y')   # entrega urgente: hoje
+                ord_status    = 0                            # prioridade máxima
             else:
-                prio_label, prio_ord = f'🟢 OK ({dias_rest}d)',  3
+                status_ppcp   = 'Dentro do prazo'
+                entrada_linha = 'Até 13:00'
+                data_entrega  = data_prod_obj.strftime('%d/%m/%Y')
+                ord_status    = 1
         else:
-            prio_label, prio_ord = '⚪ Sem prazo', 4
-            prazo     = '—'
-            motorista = '—'
-            dias_rest = None
+            status_ppcp   = 'Sem prazo'
+            entrada_linha = '—'
+            data_entrega  = '—'
+            ord_status    = 2
+
+        # Chave FIFO: data de coleta (mais antiga = maior prioridade)
+        ord_coleta = data_coleta_obj if data_coleta_obj else datetime.date.max
 
         linhas.append({
-            '_ord':       prio_ord,
-            '_dias':      dias_rest if dias_rest is not None else 999,
-            'Prioridade': prio_label,
-            'Cliente':    cli_full,
-            'IDPEDIDO':   idpedidos,
-            'OS Abertas': aguard,
-            'Prazo':      prazo,
-            'Motorista':  motorista,
+            '_ord_status': ord_status,
+            '_ord_coleta': ord_coleta,
+            'status_ppcp': status_ppcp,
+            'cli_full':    cli_full,
+            'idpedidos':   idpedidos,
+            'qtd':         qtd,
+            'data_coleta': data_coleta_str,
+            'prazo_str':   prazo_str,
+            'data_prod':   data_prod_str,
+            'entrada_linha': entrada_linha,
+            'data_entrega':  data_entrega,
+            'motorista':     motorista,
         })
 
-    # Ordena: mais urgente primeiro; empate → menor prazo → alfabético
+    # ── Ordena: Atrasados FIFO → No prazo FIFO → Sem prazo ───────────────────
     df_lin = (
         pd.DataFrame(linhas)
-        .sort_values(['_ord', '_dias', 'Cliente'])
+        .sort_values(['_ord_status', '_ord_coleta', 'cli_full'])
         .reset_index(drop=True)
     )
-    df_exibir = df_lin.drop(columns=['_ord', '_dias'])
+    df_lin.insert(0, 'Fila', range(1, len(df_lin) + 1))
 
-    # ── Métricas de urgência ──────────────────────────────────────────────────
-    n_urg    = len(df_lin[df_lin['_ord'] <= 1])
-    n_atenc  = len(df_lin[df_lin['_ord'] == 2])
-    n_ok     = len(df_lin[df_lin['_ord'] == 3])
-    n_sem_pz = len(df_lin[df_lin['_ord'] == 4])
+    # ── Métricas ──────────────────────────────────────────────────────────────
+    n_atrasado = (df_lin['_ord_status'] == 0).sum()
+    n_no_prazo = (df_lin['_ord_status'] == 1).sum()
+    n_sem_pz   = (df_lin['_ord_status'] == 2).sum()
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("⏳ OS em Aberto",  total_aberto)
-    c2.metric("🔴 Urgentes",      n_urg,    help="Prazo vencido ou para hoje/amanhã")
-    c3.metric("🟡 Atenção",       n_atenc,  help="Prazo em até 3 dias ou no roteiro sem data")
-    c4.metric("⚪ Sem prazo",     n_sem_pz, help="Cliente não encontrado no itinerário")
+    c1.metric("⏳ OS em Aberto",     total_aberto)
+    c2.metric("🔴 Fifo – Atrasado", int(n_atrasado),
+              help="Prazo venceu — entra na linha até 09:00")
+    c3.metric("🟢 Dentro do Prazo", int(n_no_prazo),
+              help="Prazo OK — entra na linha até 13:00")
+    c4.metric("⚪ Sem Prazo",        int(n_sem_pz),
+              help="Cliente não encontrado no itinerário")
 
-    st.markdown("")
-    st.dataframe(df_exibir, hide_index=True, use_container_width=True)
+    # ── Tabela da fila ────────────────────────────────────────────────────────
+    df_exibir = df_lin.rename(columns={
+        'status_ppcp':   'Status',
+        'cli_full':      'Cliente',
+        'idpedidos':     'IDPEDIDO',
+        'qtd':           'Qtd.',
+        'data_coleta':   'Data Coleta',
+        'prazo_str':     'Prazo',
+        'data_prod':     'Data Produção',
+        'entrada_linha': 'Entrada na Linha',
+        'data_entrega':  'Data Entrega',
+        'motorista':     'Motorista',
+    })[['Fila', 'Status', 'Cliente', 'IDPEDIDO', 'Qtd.',
+        'Data Coleta', 'Prazo', 'Data Produção', 'Entrada na Linha',
+        'Data Entrega', 'Motorista']]
+
+    st.dataframe(
+        df_exibir.style.apply(_colorir_fila_ppcp, axis=1),
+        hide_index=True,
+        use_container_width=True,
+    )
 
     st.markdown("---")
     st.caption(
-        f"**{len(df_lin)} clientes** com OS em aberto | "
+        f"**{len(df_lin)} clientes** na fila | "
         f"**{total_aberto} pneus** aguardando produção"
     )
+
+
+def _colorir_fila_ppcp(row: pd.Series) -> list[str]:
+    """Aplica cores por linha na tabela PPCP: vermelho=atrasado, verde=no prazo."""
+    status = str(row.get('Status', ''))
+    if 'Atrasado' in status:
+        return ['background-color:#fdecea;color:#8b0000'] * len(row)
+    if 'Dentro' in status:
+        return ['background-color:#e8f5e9;color:#1b5e20'] * len(row)
+    return [''] * len(row)
 
 
 def _status_por_plano_ppcp(plano: dict, df_banco: pd.DataFrame):
