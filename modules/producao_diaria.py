@@ -677,18 +677,15 @@ def _status_por_itinerario(itin: dict | None, df_banco: pd.DataFrame):
             m = re.search(r'(\d+)\s*DIA', prazo_str.upper())
             if m:
                 dias = int(m.group(1))
-            palavras_itin = _norm(cli_itin).split()
-            if not palavras_itin:
+            chave = _norm(cli_itin)
+            if not chave:
                 continue
-            info = {
+            mapa_prazo[chave] = {
                 'prazo_dias': dias,
                 'prazo_str':  prazo_str or '—',
                 'motorista':  motorista or '—',
                 'nome_itin':  cli_itin,
             }
-            # Indexa por 2 primeiros nomes e por 1 primeiro nome (fallback)
-            mapa_prazo[' '.join(palavras_itin[:2])] = info
-            mapa_prazo[palavras_itin[0]] = info
 
     # ── Caption informativo ───────────────────────────────────────────────────
     partes = []
@@ -727,13 +724,17 @@ def _status_por_itinerario(itin: dict | None, df_banco: pd.DataFrame):
             data_coleta_obj = min(datas_validas)
         data_coleta_str = data_coleta_obj.strftime('%d/%m/%Y') if data_coleta_obj else '—'
 
-        # Match por 2 primeiros nomes; fallback para 1
-        cli_palavras = _norm(cli_full).split()
+        # Todas as palavras do nome do itinerário devem aparecer no nome do banco
+        # (ordem livre, sem exigir adjacência).
+        # Ex: "PAULINO NASCIMENTO" bate em "PAULINO DE OLIVEIRA NASCIMENTO FILHO LTDA"
+        #     "VIACAO TRANSCAP"   NÃO bate em "VIACAO JACAREI LTDA" (falta TRANSCAP)
+        cli_norm   = _norm(cli_full)
         prazo_info: dict | None = None
-        if len(cli_palavras) >= 2:
-            prazo_info = mapa_prazo.get(' '.join(cli_palavras[:2]))
-        if prazo_info is None and cli_palavras:
-            prazo_info = mapa_prazo.get(cli_palavras[0])
+        for k_norm, v in mapa_prazo.items():
+            palavras_k = k_norm.split()
+            if all(re.search(r'\b' + re.escape(p) + r'\b', cli_norm) for p in palavras_k):
+                prazo_info = v
+                break
 
         prazo_dias = prazo_info['prazo_dias'] if prazo_info else None
         prazo_str  = prazo_info['prazo_str']  if prazo_info else '—'
