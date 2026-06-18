@@ -563,7 +563,7 @@ def _aba_alocar_rua_producao(df: pd.DataFrame):
         linhas_pneus = ""
         for _, row in pneus_rua.iterrows():
             nrordem = row.get('NRORDEM', '')
-            cliente = str(row.get('CLIENTE', '')).split()[0]
+            cliente = str(row.get('CLIENTE', ''))
             desenho = row.get('DESENHO', '')
             linhas_pneus += (
                 f"<div style='padding:2px 0;border-bottom:1px solid #333;font-size:11px;'>"
