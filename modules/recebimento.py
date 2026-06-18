@@ -21,11 +21,12 @@ def tela_recebimento():
         st.warning("Nenhuma OS cadastrada no sistema. Importe o CSV pelo Painel PPCP.")
         return
 
-    aba1, aba2, aba3, aba4 = st.tabs([
+    aba1, aba2, aba3, aba4, aba5 = st.tabs([
         "📦 1. Alocar por Posição (Bipe)",
         "🔄 2. Movimentar/Transferir",
         "🗺️ 3. Mapa de Capacidade",
         "📋 4. Mapa FIFO (Puxar Produção)",
+        "🧼 5. Enviar para Limpeza (Bipe)",
     ])
 
     with aba1:
@@ -36,6 +37,8 @@ def tela_recebimento():
         _aba_mapa_capacidade(df)
     with aba4:
         _aba_mapa_fifo(df)
+    with aba5:
+        _aba_enviar_limpeza(df)
 
 
 # ── 1. Alocação (Bipe da Posição na Parede + Bipe dos Pneus) ─────────────────
@@ -366,4 +369,64 @@ def _aba_mapa_fifo(df: pd.DataFrame):
             </div>
             """,
             unsafe_allow_html=True,
+        )
+
+
+# ── 5. Enviar para Limpeza (Bipe da posição → libera a vaga) ─────────────────
+def _aba_enviar_limpeza(df: pd.DataFrame):
+    st.subheader("Enviar Pallet para Máquina de Limpeza")
+    st.info(
+        "Bipe o código da posição (Rua + Vaga) do pallet que está saindo para a "
+        "limpeza. Todos os pneus daquela posição avançam para **'Em Limpeza'** "
+        "e a vaga fica disponível imediatamente para um novo pallet."
+    )
+
+    if 'limpeza_key' not in st.session_state:
+        st.session_state.limpeza_key = 0
+
+    posicao_bipada = st.text_input(
+        "🧼 Bipe a Posição (parede):",
+        key=f"bipe_limpeza_{st.session_state.limpeza_key}",
+        placeholder="Ex: A1, C4, H5...",
+    ).strip().upper()
+
+    if posicao_bipada:
+        if posicao_bipada not in _POSICOES_VALIDAS:
+            st.error(
+                f"❌ Posição '{posicao_bipada}' inválida. "
+                f"Use Rua A–H + Vaga 1–{_VAGAS_POR_RUA} (ex: C4)."
+            )
+        else:
+            pneus_pos = df[
+                (df['STATUS'] == 'Aguardando') & (df['LOCAL_PALLET'] == posicao_bipada)
+            ]
+            if pneus_pos.empty:
+                st.warning(f"⚠️ A posição **{posicao_bipada}** está vazia. Nada para enviar.")
+            else:
+                qtd = len(pneus_pos)
+                clientes = ', '.join(pneus_pos['CLIENTE'].unique().tolist())
+                st.session_state.bd_pneus.loc[pneus_pos.index, 'STATUS'] = 'Em Limpeza'
+                salvar_dados(st.session_state.bd_pneus)
+                st.session_state.msg_limpeza = (
+                    f"🧼 **{qtd} pneu(s)** da posição **{posicao_bipada}** "
+                    f"({clientes}) enviados para a limpeza. "
+                    f"Posição **{posicao_bipada}** liberada!"
+                )
+            st.session_state.limpeza_key += 1
+            st.rerun()
+
+    if st.session_state.get('msg_limpeza'):
+        st.success(st.session_state.msg_limpeza)
+        st.session_state.msg_limpeza = None
+
+    st.markdown("---")
+
+    em_limpeza = df[df['STATUS'] == 'Em Limpeza']
+    st.markdown(f"**Pneus atualmente em limpeza: {len(em_limpeza)}**")
+    if not em_limpeza.empty:
+        st.dataframe(
+            em_limpeza[['NRORDEM', 'CLIENTE', 'DESENHO', 'LOCAL_PALLET']]
+            .rename(columns={'LOCAL_PALLET': 'Posição de Origem'}),
+            use_container_width=True,
+            hide_index=True,
         )

@@ -13,11 +13,12 @@ def tela_painel_pcp():
     df: pd.DataFrame = st.session_state.bd_pneus
 
     # ── Indicadores rápidos ──────────────────────────────────────────────────
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Aguardando Entrada", len(df[df['STATUS'] == 'Aguardando']))
-    col2.metric("Em Produção",        len(df[df['STATUS'] == 'Em Produção']))
-    col3.metric("Expedidos",          len(df[df['STATUS'] == 'Expedido']))
-    col4.metric("Total de OS",        len(df))
+    col2.metric("Em Limpeza",         len(df[df['STATUS'] == 'Em Limpeza']))
+    col3.metric("Em Produção",        len(df[df['STATUS'] == 'Em Produção']))
+    col4.metric("Expedidos",          len(df[df['STATUS'] == 'Expedido']))
+    col5.metric("Total de OS",        len(df))
 
     st.markdown("---")
 
@@ -102,11 +103,11 @@ def tela_painel_pcp():
                 else:
                     # ── Modo SUBSTITUIR: df_novo vira o novo banco, ──────────
                     # mas PRESERVA o progresso já feito no sistema:
-                    #  • Em Produção / Expedido → mantém status + datas + pallet
+                    #  • Em Limpeza / Em Produção / Expedido → mantém status + datas + pallet
                     #  • Aguardando mas já alocado no pátio → mantém pallet +
                     #    data de chegada (não perde o recebimento ao re-importar)
                     df_atual = st.session_state.bd_pneus
-                    protegidos = 0       # já bipados (Em Produção/Expedido)
+                    protegidos = 0       # já bipados (Em Limpeza/Em Produção/Expedido)
                     patio_mantidos = 0   # alocados no pátio aguardando
                     for i, row in df_novo.iterrows():
                         ordem = row['NRORDEM']
@@ -117,7 +118,7 @@ def tela_painel_pcp():
                         status_banco = ex['STATUS']
                         pallet_banco = str(ex['LOCAL_PALLET']).strip()
 
-                        if status_banco in ['Em Produção', 'Expedido']:
+                        if status_banco in ['Em Limpeza', 'Em Produção', 'Expedido']:
                             df_novo.at[i, 'STATUS']       = status_banco
                             df_novo.at[i, 'DATA_ENTRADA'] = ex['DATA_ENTRADA']
                             df_novo.at[i, 'DATA_SAIDA']   = ex['DATA_SAIDA']
@@ -390,6 +391,7 @@ def _colorir_status(row: pd.Series):
     """Aplica cor de fundo conforme o STATUS de cada linha."""
     cores = {
         'Aguardando':  'background-color: #fff3cd; color: #856404',
+        'Em Limpeza':  'background-color: #e8eaf6; color: #1a237e',
         'Em Produção': 'background-color: #cce5ff; color: #004085',
         'Expedido':    'background-color: #d4edda; color: #155724',
     }

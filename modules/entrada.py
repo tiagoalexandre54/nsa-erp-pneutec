@@ -25,8 +25,8 @@ def tela_entrada():
 
     st.info(
         "Bipe a OS (NRORDEM) para registrar a entrada na linha. A lista mostra os "
-        "pneus **recebidos no pátio** (alocados em pallet) na data escolhida que "
-        "ainda **aguardam** entrada na produção."
+        "pneus que já passaram pela **limpeza** (ou foram recebidos no pátio) na "
+        "data escolhida e ainda **aguardam** entrada na produção."
     )
 
     # ── Campo de bipe ────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ def _processar_bipe(os_bipada: str):
     i = idx[0]
     status_atual = str(df.at[i, 'STATUS']).strip()
 
-    if status_atual == 'Aguardando':
+    if status_atual in ('Aguardando', 'Em Limpeza'):
         df.at[i, 'STATUS']       = 'Em Produção'
         df.at[i, 'DATA_ENTRADA'] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         salvar_dados(df)
@@ -109,9 +109,10 @@ def _processar_bipe(os_bipada: str):
 def _lista_recebidos_do_dia(data_sel: datetime.date):
     df = st.session_state.bd_pneus
 
-    # Só pneus alocados no pátio (têm pallet) e ainda aguardando entrada
+    # Pneus alocados no pátio (têm pallet) que já saíram da limpeza (ou ainda
+    # estão Aguardando, para quem pula a etapa de limpeza) e aguardam entrada
     base = df[
-        (df['STATUS'] == 'Aguardando') &
+        (df['STATUS'].isin(['Aguardando', 'Em Limpeza'])) &
         (df['LOCAL_PALLET'].astype(str).str.strip() != '')
     ].copy()
 
@@ -144,7 +145,7 @@ def _lista_recebidos_do_dia(data_sel: datetime.date):
     )
 
     for pallet, grupo in do_dia.groupby('LOCAL_PALLET'):
-        with st.expander(f"📦 Pallet {pallet} — {len(grupo)} pneu(s)", expanded=True):
+        with st.expander(f"📦 Posição {pallet} — {len(grupo)} pneu(s)", expanded=True):
             st.dataframe(
                 grupo[['NRORDEM', 'CLIENTE', 'DESENHO', 'NRSERIE', 'IDPEDIDOPNEU']]
                 .rename(columns={'IDPEDIDOPNEU': 'IDPEDIDO'})

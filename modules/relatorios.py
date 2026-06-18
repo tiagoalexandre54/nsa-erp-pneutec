@@ -55,11 +55,12 @@ def tela_relatorios():
     st.markdown("---")
 
     # ── Cards de resumo ──────────────────────────────────────────────────────
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Aguardando",  len(df_filtrado[df_filtrado['STATUS'] == 'Aguardando']))
-    col2.metric("Em Produção", len(df_filtrado[df_filtrado['STATUS'] == 'Em Produção']))
-    col3.metric("Expedidos",   len(df_filtrado[df_filtrado['STATUS'] == 'Expedido']))
-    col4.metric("Total",       len(df_filtrado))
+    col2.metric("Em Limpeza",  len(df_filtrado[df_filtrado['STATUS'] == 'Em Limpeza']))
+    col3.metric("Em Produção", len(df_filtrado[df_filtrado['STATUS'] == 'Em Produção']))
+    col4.metric("Expedidos",   len(df_filtrado[df_filtrado['STATUS'] == 'Expedido']))
+    col5.metric("Total",       len(df_filtrado))
 
     st.markdown("---")
 
@@ -230,6 +231,7 @@ def _gerar_excel_completo(df: pd.DataFrame) -> bytes:
     buf = BytesIO()
     abas = {
         "Geral":        df,
+        "Em Limpeza":   df[df['STATUS'] == 'Em Limpeza'],
         "Em Producao":  df[df['STATUS'] == 'Em Produção'],
         "Expedidos":    df[df['STATUS'] == 'Expedido'],
         "Aguardando":   df[df['STATUS'] == 'Aguardando'],
