@@ -550,15 +550,27 @@ def _aba_alocar_rua_producao(df: pd.DataFrame):
 
     cols = st.columns(4)
     for n, rua in enumerate(_RUAS_PRODUCAO):
-        ocupacao_rua = len(
-            df[(df['STATUS'] == 'Aguardando Produção') & (df['RUA_PRODUCAO'] == rua)]
-        )
+        pneus_rua = df[(df['STATUS'] == 'Aguardando Produção') & (df['RUA_PRODUCAO'] == rua)]
+        ocupacao_rua = len(pneus_rua)
+
         if ocupacao_rua >= _CAP_RUA_PRODUCAO:
             cor_borda, cor_header, label = "#e74c3c", "#c0392b", "🔴 CHEIA"
         elif ocupacao_rua >= _CAP_RUA_PRODUCAO * 0.7:
             cor_borda, cor_header, label = "#f39c12", "#d68910", "🟡 ATENÇÃO"
         else:
             cor_borda, cor_header, label = "#27ae60", "#1e8449", "🟢 OK"
+
+        linhas_pneus = ""
+        for _, row in pneus_rua.iterrows():
+            nrordem = row.get('NRORDEM', '')
+            cliente = str(row.get('CLIENTE', '')).split()[0]
+            desenho = row.get('DESENHO', '')
+            linhas_pneus += (
+                f"<div style='padding:2px 0;border-bottom:1px solid #333;font-size:11px;'>"
+                f"OS {nrordem} · {cliente} · {desenho}</div>"
+            )
+        if not linhas_pneus:
+            linhas_pneus = "<div style='font-size:11px;color:#888;'>vazia</div>"
 
         cols[n % 4].markdown(
             f"""
@@ -568,8 +580,9 @@ def _aba_alocar_rua_producao(df: pd.DataFrame):
                 <span style="color:#fff;font-size:13px;font-weight:bold;">🏭 {rua}</span>
                 <div style="color:#fff;font-size:10px;">{label}</div>
               </div>
-              <div style="padding:6px 8px;background:#1a1a2e;">
-                <div style="font-size:13px;color:#fff;">{ocupacao_rua}/{_CAP_RUA_PRODUCAO} pneus</div>
+              <div style="padding:6px 8px;background:#1a1a2e;max-height:160px;overflow-y:auto;">
+                <div style="font-size:13px;color:#fff;margin-bottom:4px;">{ocupacao_rua}/{_CAP_RUA_PRODUCAO} pneus</div>
+                {linhas_pneus}
               </div>
             </div>
             """,
