@@ -6,6 +6,11 @@ import pandas as pd
 import datetime
 from modules.database import salvar_dados
 
+# ── Mapa físico do pátio: Rua (A–H) x Vaga (1–5) ─────────────────────────────
+_RUAS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+_VAGAS_POR_RUA = 5
+_POSICOES_VALIDAS = {f"{rua}{n}" for rua in _RUAS for n in range(1, _VAGAS_POR_RUA + 1)}
+
 
 def tela_recebimento():
     st.title("📥 Recebimento e Gestão de Pátio (FIFO)")
@@ -17,7 +22,7 @@ def tela_recebimento():
         return
 
     aba1, aba2, aba3, aba4 = st.tabs([
-        "📦 1. Alocar no Pallet (Bipe)",
+        "📦 1. Alocar por Posição (Bipe)",
         "🔄 2. Movimentar/Transferir",
         "🗺️ 3. Mapa de Capacidade",
         "📋 4. Mapa FIFO (Puxar Produção)",
@@ -33,34 +38,61 @@ def tela_recebimento():
         _aba_mapa_fifo(df)
 
 
-# ── 1. Alocação (Bipe para colocar no Pallet) ────────────────────────────────
+# ── 1. Alocação (Bipe da Posição na Parede + Bipe dos Pneus) ─────────────────
 def _aba_alocar_pallet(df: pd.DataFrame):
     st.subheader("Alocação Inicial no Pátio")
-    st.info("Bipe os pneus recém-chegados para informar em qual Pallet eles estão sendo guardados.")
+    st.info(
+        "1️⃣ Bipe o código da posição fixado na parede (Rua A–H, Vaga 1–5). "
+        "2️⃣ Bipe os pneus que estão sendo guardados ali."
+    )
 
     sem_pallet = df[(df['STATUS'] == 'Aguardando') & (df['LOCAL_PALLET'] == '')]
+
+    if 'posicao_ativa' not in st.session_state:
+        st.session_state.posicao_ativa = ''
+    if 'posicao_key' not in st.session_state:
+        st.session_state.posicao_key = 0
+    if 'recebimento_key' not in st.session_state:
+        st.session_state.recebimento_key = 0
 
     col1, col2 = st.columns([1, 2])
 
     with col1:
-        pallet_destino = st.text_input(
-            "📍 Nome/Número do Pallet:",
-            placeholder="Ex: P-01, GAIOLA-A...",
+        posicao_bipada = st.text_input(
+            "🧱 Bipe a Posição (parede):",
+            key=f"bipe_posicao_{st.session_state.posicao_key}",
+            placeholder="Ex: A1, C4, H5...",
         ).strip().upper()
 
-        if 'recebimento_key' not in st.session_state:
-            st.session_state.recebimento_key = 0
-
-        os_bipada = st.text_input(
-            "📷 Bipe a OS (NRORDEM):",
-            key=f"bipe_receb_{st.session_state.recebimento_key}",
-            placeholder="Aguardando leitor...",
-        ).strip()
-
-        if os_bipada:
-            if not pallet_destino:
-                st.error("⚠️ Digite o nome do Pallet ANTES de bipar o pneu!")
+        if posicao_bipada:
+            if posicao_bipada not in _POSICOES_VALIDAS:
+                st.error(
+                    f"❌ Posição '{posicao_bipada}' inválida. "
+                    f"Use Rua A–H + Vaga 1–{_VAGAS_POR_RUA} (ex: C4)."
+                )
             else:
+                st.session_state.posicao_ativa = posicao_bipada
+                st.session_state.posicao_key += 1
+                st.rerun()
+
+        if st.session_state.posicao_ativa:
+            pos = st.session_state.posicao_ativa
+            rua, vaga = pos[0], pos[1:]
+            ocupacao_atual = len(
+                df[(df['STATUS'] == 'Aguardando') & (df['LOCAL_PALLET'] == pos)]
+            )
+            st.success(
+                f"📍 Posição ativa: **{pos}** (Rua {rua}, Vaga {vaga}) "
+                f"— {ocupacao_atual} pneu(s) já guardado(s) aqui"
+            )
+
+            os_bipada = st.text_input(
+                "📷 Bipe a OS (NRORDEM):",
+                key=f"bipe_receb_{st.session_state.recebimento_key}",
+                placeholder="Aguardando leitor...",
+            ).strip()
+
+            if os_bipada:
                 idx = df.index[df['NRORDEM'] == os_bipada].tolist()
                 if idx:
                     i = idx[0]
@@ -69,19 +101,23 @@ def _aba_alocar_pallet(df: pd.DataFrame):
 
                     if status_atual != 'Aguardando':
                         st.error(f"🛑 A OS {os_bipada} já está **{status_atual}**. Não pode ser recebida.")
-                    elif pallet_atual == pallet_destino:
-                        st.warning(f"⚠️ A OS {os_bipada} já está no pallet **{pallet_destino}**.")
+                    elif pallet_atual == pos:
+                        st.warning(f"⚠️ A OS {os_bipada} já está na posição **{pos}**.")
                     else:
                         agora = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                        st.session_state.bd_pneus.at[i, 'LOCAL_PALLET']  = pallet_destino
+                        st.session_state.bd_pneus.at[i, 'LOCAL_PALLET']  = pos
                         # Carimba a data de CHEGADA/recebimento no pátio
                         st.session_state.bd_pneus.at[i, 'DATA_ENTRADA'] = agora
                         salvar_dados(st.session_state.bd_pneus)
-                        st.session_state.msg_receb = f"✅ OS {os_bipada} guardada no **{pallet_destino}**!"
+                        st.session_state.msg_receb = f"✅ OS {os_bipada} guardada na posição **{pos}**!"
                         st.session_state.recebimento_key += 1
                         st.rerun()
                 else:
                     st.error("❌ OS não encontrada no sistema.")
+
+            if st.button("🔄 Trocar de posição"):
+                st.session_state.posicao_ativa = ''
+                st.rerun()
 
         if st.session_state.get('msg_receb'):
             st.success(st.session_state.msg_receb)
@@ -96,13 +132,13 @@ def _aba_alocar_pallet(df: pd.DataFrame):
                 hide_index=True,
             )
         else:
-            st.success("🎉 Todos os pneus 'Aguardando' já estão alocados em pallets!")
+            st.success("🎉 Todos os pneus 'Aguardando' já estão alocados em posições!")
 
 
-# ── 2. Movimentação (Transferir de um Pallet para outro) ─────────────────────
+# ── 2. Movimentação (Transferir de uma Posição para outra) ───────────────────
 def _aba_movimentar_pallet(df: pd.DataFrame):
-    st.subheader("Transferência de Pallets")
-    st.write("Mova pneus de um pallet para outro para organizar o espaço (consolidar cargas).")
+    st.subheader("Transferência entre Posições")
+    st.write("Mova pneus de uma posição para outra para organizar o espaço (consolidar cargas).")
 
     pallets_ativos = sorted(
         df[(df['STATUS'] == 'Aguardando') & (df['LOCAL_PALLET'] != '')]['LOCAL_PALLET']
@@ -110,14 +146,18 @@ def _aba_movimentar_pallet(df: pd.DataFrame):
     )
 
     if not pallets_ativos:
-        st.info("Não há pallets com pneus aguardando no momento.")
+        st.info("Não há posições com pneus aguardando no momento.")
         return
 
     c1, c2 = st.columns(2)
-    pallet_origem  = c1.selectbox("De qual Pallet deseja retirar?", pallets_ativos, key="mov_origem")
+    pallet_origem  = c1.selectbox("De qual Posição deseja retirar?", pallets_ativos, key="mov_origem")
     pallet_destino = c2.text_input(
-        "Para qual Pallet vai? (Digite o nome):", placeholder="Ex: P-02"
+        "🧱 Bipe a Posição de destino (parede):", placeholder="Ex: C4"
     ).strip().upper()
+
+    if pallet_destino and pallet_destino not in _POSICOES_VALIDAS:
+        c2.error(f"❌ Posição '{pallet_destino}' inválida. Use Rua A–H + Vaga 1–{_VAGAS_POR_RUA}.")
+        pallet_destino = ''
 
     pneus_origem = df[(df['STATUS'] == 'Aguardando') & (df['LOCAL_PALLET'] == pallet_origem)]
 
@@ -169,89 +209,71 @@ def _aba_movimentar_pallet(df: pd.DataFrame):
                 st.rerun()
 
 
-# ── 3. Mapa de Capacidade (Visualização por Pallet) ──────────────────────────
+# ── 3. Mapa de Capacidade (Grade física: Rua x Vaga) ──────────────────────────
 def _aba_mapa_capacidade(df: pd.DataFrame):
-    st.subheader("Mapa de Capacidade dos Pallets")
+    st.subheader("Mapa de Capacidade do Pátio (Rua x Vaga)")
 
     aguardando = df[df['STATUS'] == 'Aguardando'].copy()
     com_pallet = aguardando[aguardando['LOCAL_PALLET'] != '']
     sem_pallet = aguardando[aguardando['LOCAL_PALLET'] == '']
 
-    col_resumo1, col_resumo2, col_resumo3 = st.columns(3)
-    col_resumo1.metric("Pallets Ativos", com_pallet['LOCAL_PALLET'].nunique())
-    col_resumo2.metric("Pneus Alocados", len(com_pallet))
-    col_resumo3.metric("Pneus Sem Pallet", len(sem_pallet))
+    # Posições válidas (padrão A1–H5) ocupadas vs. legado (nomes antigos de pallet)
+    ocupadas_validas = com_pallet[com_pallet['LOCAL_PALLET'].isin(_POSICOES_VALIDAS)]
+    legado = com_pallet[~com_pallet['LOCAL_PALLET'].isin(_POSICOES_VALIDAS)]
+
+    col_resumo1, col_resumo2, col_resumo3, col_resumo4 = st.columns(4)
+    col_resumo1.metric("Posições Ocupadas", f"{ocupadas_validas['LOCAL_PALLET'].nunique()}/{len(_POSICOES_VALIDAS)}")
+    col_resumo2.metric("Posições Livres", len(_POSICOES_VALIDAS) - ocupadas_validas['LOCAL_PALLET'].nunique())
+    col_resumo3.metric("Pneus Alocados", len(com_pallet))
+    col_resumo4.metric("Pneus Sem Posição", len(sem_pallet))
 
     st.markdown("---")
 
-    if com_pallet.empty:
-        st.info("Nenhum pallet com pneus alocados no momento.")
-        return
-
     # Filtro por cliente
-    clientes_disponiveis = sorted(com_pallet['CLIENTE'].unique().tolist())
+    clientes_disponiveis = sorted(com_pallet['CLIENTE'].unique().tolist()) if not com_pallet.empty else []
     filtro_cliente = st.selectbox(
         "Filtrar por Cliente (opcional):",
         ["Todos"] + clientes_disponiveis,
         key="mapa_cap_cliente",
     )
+    com_pallet_filtrado = com_pallet if filtro_cliente == "Todos" else com_pallet[com_pallet['CLIENTE'] == filtro_cliente]
 
-    if filtro_cliente != "Todos":
-        com_pallet = com_pallet[com_pallet['CLIENTE'] == filtro_cliente]
+    for rua in _RUAS:
+        st.markdown(f"#### Rua {rua}")
+        cols = st.columns(_VAGAS_POR_RUA)
+        for n in range(1, _VAGAS_POR_RUA + 1):
+            codigo = f"{rua}{n}"
+            pneus_pos = com_pallet_filtrado[com_pallet_filtrado['LOCAL_PALLET'] == codigo]
+            qtd = len(pneus_pos)
 
-    pallets = sorted(com_pallet['LOCAL_PALLET'].unique().tolist())
-
-    # Renderiza 3 pallets por linha
-    cols_por_linha = 3
-    for i in range(0, len(pallets), cols_por_linha):
-        cols = st.columns(cols_por_linha)
-        for j, pallet in enumerate(pallets[i:i + cols_por_linha]):
-            pneus_pallet = com_pallet[com_pallet['LOCAL_PALLET'] == pallet]
-            qtd = len(pneus_pallet)
-            clientes_no_pallet = pneus_pallet['CLIENTE'].unique().tolist()
-
-            # Cor do card baseada na quantidade
-            if qtd >= 8:
-                cor_borda = "#e74c3c"  # vermelho — cheio
-                cor_header = "#c0392b"
-                label_status = "🔴 CHEIO"
+            if qtd == 0:
+                cor_borda, cor_header, label_status = "#444", "#2c2c2c", "VAZIA"
+            elif qtd >= 8:
+                cor_borda, cor_header, label_status = "#e74c3c", "#c0392b", "🔴 CHEIA"
             elif qtd >= 5:
-                cor_borda = "#f39c12"  # laranja — quase cheio
-                cor_header = "#d68910"
-                label_status = "🟡 ATENÇÃO"
+                cor_borda, cor_header, label_status = "#f39c12", "#d68910", "🟡 ATENÇÃO"
             else:
-                cor_borda = "#27ae60"  # verde — disponível
-                cor_header = "#1e8449"
-                label_status = "🟢 OK"
+                cor_borda, cor_header, label_status = "#27ae60", "#1e8449", "🟢 OK"
 
-            # Linhas de pneus no card
             linhas_pneus = ""
-            for _, row in pneus_pallet.iterrows():
-                nrordem  = row.get('NRORDEM', '')
-                cliente  = str(row.get('CLIENTE', '')).split()[0]  # primeira palavra do cliente
-                desenho  = row.get('DESENHO', '')
+            for _, row in pneus_pos.iterrows():
+                nrordem = row.get('NRORDEM', '')
+                cliente = str(row.get('CLIENTE', '')).split()[0]
                 linhas_pneus += (
-                    f"<div style='padding:3px 0;border-bottom:1px solid #ddd;font-size:12px;'>"
-                    f"<b>OS {nrordem}</b> &nbsp;·&nbsp; {cliente} &nbsp;·&nbsp; {desenho}"
-                    f"</div>"
+                    f"<div style='padding:2px 0;font-size:11px;'>"
+                    f"OS {nrordem} · {cliente}</div>"
                 )
 
-            clientes_str = "<br>".join(clientes_no_pallet)
-
-            cols[j].markdown(
+            cols[n - 1].markdown(
                 f"""
-                <div style="border:2px solid {cor_borda};border-radius:10px;
-                            margin-bottom:16px;overflow:hidden;">
-                  <div style="background:{cor_header};padding:8px 12px;">
-                    <span style="color:#fff;font-size:15px;font-weight:bold;">
-                      📦 {pallet}
-                    </span>
-                    <span style="float:right;color:#fff;font-size:12px;">{label_status}</span>
+                <div style="border:2px solid {cor_borda};border-radius:8px;
+                            margin-bottom:12px;overflow:hidden;">
+                  <div style="background:{cor_header};padding:6px 8px;">
+                    <span style="color:#fff;font-size:13px;font-weight:bold;">📍 {codigo}</span>
+                    <div style="color:#fff;font-size:10px;">{label_status}</div>
                   </div>
-                  <div style="padding:8px 12px;background:#1a1a2e;">
-                    <div style="font-size:13px;color:#aaa;margin-bottom:6px;">
-                      <b style="color:#fff;">{qtd} pneu(s)</b> &nbsp;|&nbsp; {clientes_str}
-                    </div>
+                  <div style="padding:6px 8px;background:#1a1a2e;min-height:30px;">
+                    <div style="font-size:11px;color:#aaa;">{qtd} pneu(s)</div>
                     {linhas_pneus}
                   </div>
                 </div>
@@ -259,10 +281,20 @@ def _aba_mapa_capacidade(df: pd.DataFrame):
                 unsafe_allow_html=True,
             )
 
-    # Pneus sem pallet ao final
+    # Posições legadas (nomes que não seguem o padrão A1–H5)
+    if not legado.empty:
+        st.markdown("---")
+        st.warning(f"⚠️ **{legado['LOCAL_PALLET'].nunique()} posição(ões) com nome antigo (fora do padrão Rua/Vaga):**")
+        st.dataframe(
+            legado[['LOCAL_PALLET', 'NRORDEM', 'CLIENTE', 'DESENHO']],
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    # Pneus sem posição ao final
     if not sem_pallet.empty:
         st.markdown("---")
-        st.warning(f"⚠️ **{len(sem_pallet)} pneus sem pallet definido:**")
+        st.warning(f"⚠️ **{len(sem_pallet)} pneus sem posição definida:**")
         st.dataframe(
             sem_pallet[['NRORDEM', 'IDPEDIDOPNEU', 'CLIENTE', 'DESENHO']],
             use_container_width=True,
@@ -325,7 +357,7 @@ def _aba_mapa_fifo(df: pd.DataFrame):
             f"""
             <div style="background:{cor_bg};color:{cor_txt};border-radius:8px;
                         padding:12px;margin-bottom:10px;border:1px solid #ccc;">
-              <h4 style="margin:0 0 5px 0;">{icone} — Pallet: <b>{pallet}</b></h4>
+              <h4 style="margin:0 0 5px 0;">{icone} — Posição: <b>{pallet}</b></h4>
               <p style="margin:0;font-size:14px;">
                 <b>Qtd:</b> {qtd} pneus &nbsp;&nbsp;|&nbsp;&nbsp;
                 <b>Pneu mais antigo:</b> {data_antiga} &nbsp;&nbsp;|&nbsp;&nbsp;
