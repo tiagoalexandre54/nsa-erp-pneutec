@@ -6,8 +6,9 @@ import pandas as pd
 import datetime
 from modules.database import salvar_dados
 
-# ── Mapa físico do pátio: Rua (A–H) x Vaga (1–5) ─────────────────────────────
-_RUAS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+# ── Mapa físico do pátio: Rua (A–K, 11 colunas) x Vaga (1–5) ─────────────────
+# 11 colunas x 5 pallets x 8 pneus/pallet = 440 pneus paletizados de capacidade.
+_RUAS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']
 _VAGAS_POR_RUA = 5
 _POSICOES_VALIDAS = {f"{rua}{n}" for rua in _RUAS for n in range(1, _VAGAS_POR_RUA + 1)}
 
@@ -77,7 +78,7 @@ def tela_recebimento():
 def _aba_alocar_pallet(df: pd.DataFrame):
     st.subheader("Alocação Inicial no Pátio")
     st.info(
-        "1️⃣ Bipe o código da posição fixado na parede (Rua A–H, Vaga 1–5). "
+        "1️⃣ Bipe o código da posição fixado na parede (Rua A–K, Vaga 1–5). "
         "2️⃣ Bipe os pneus que estão sendo guardados ali."
     )
 
@@ -103,7 +104,7 @@ def _aba_alocar_pallet(df: pd.DataFrame):
             if posicao_bipada not in _POSICOES_VALIDAS:
                 st.error(
                     f"❌ Posição '{posicao_bipada}' inválida. "
-                    f"Use Rua A–H + Vaga 1–{_VAGAS_POR_RUA} (ex: C4)."
+                    f"Use Rua A–K + Vaga 1–{_VAGAS_POR_RUA} (ex: C4)."
                 )
             else:
                 st.session_state.posicao_ativa = posicao_bipada
@@ -191,7 +192,7 @@ def _aba_movimentar_pallet(df: pd.DataFrame):
     ).strip().upper()
 
     if pallet_destino and pallet_destino not in _POSICOES_VALIDAS:
-        c2.error(f"❌ Posição '{pallet_destino}' inválida. Use Rua A–H + Vaga 1–{_VAGAS_POR_RUA}.")
+        c2.error(f"❌ Posição '{pallet_destino}' inválida. Use Rua A–K + Vaga 1–{_VAGAS_POR_RUA}.")
         pallet_destino = ''
 
     pneus_origem = df[(df['STATUS'] == 'Aguardando') & (df['LOCAL_PALLET'] == pallet_origem)]
@@ -426,7 +427,7 @@ def _aba_enviar_limpeza(df: pd.DataFrame):
         if posicao_bipada not in _POSICOES_VALIDAS:
             st.error(
                 f"❌ Posição '{posicao_bipada}' inválida. "
-                f"Use Rua A–H + Vaga 1–{_VAGAS_POR_RUA} (ex: C4)."
+                f"Use Rua A–K + Vaga 1–{_VAGAS_POR_RUA} (ex: C4)."
             )
         else:
             pneus_pos = df[
