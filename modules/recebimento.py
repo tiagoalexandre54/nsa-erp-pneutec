@@ -22,11 +22,11 @@ def tela_recebimento():
         return
 
     aba1, aba2, aba3, aba4, aba5 = st.tabs([
-        "📦 1. Alocar por Posição (Bipe)",
-        "🔄 2. Movimentar/Transferir",
-        "🗺️ 3. Mapa de Capacidade",
-        "📋 4. Mapa FIFO (Puxar Produção)",
-        "🧼 5. Enviar para Limpeza (Bipe)",
+        "📦 1. Alocar (Bipe)",
+        "🔄 2. Movimentar",
+        "🗺️ 3. Capacidade",
+        "📋 4. FIFO",
+        "🧼 5. Limpeza (Bipe)",
     ])
 
     with aba1:
