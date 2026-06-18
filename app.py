@@ -44,16 +44,18 @@ menu = st.sidebar.radio(
 
 st.sidebar.markdown("---")
 
-total   = len(st.session_state.bd_pneus)
-aguard  = len(st.session_state.bd_pneus[st.session_state.bd_pneus['STATUS'] == 'Aguardando'])
-limpeza = len(st.session_state.bd_pneus[st.session_state.bd_pneus['STATUS'] == 'Em Limpeza'])
-prod    = len(st.session_state.bd_pneus[st.session_state.bd_pneus['STATUS'] == 'Em Produção'])
-exped   = len(st.session_state.bd_pneus[st.session_state.bd_pneus['STATUS'] == 'Expedido'])
+total      = len(st.session_state.bd_pneus)
+aguard     = len(st.session_state.bd_pneus[st.session_state.bd_pneus['STATUS'] == 'Aguardando'])
+limpeza    = len(st.session_state.bd_pneus[st.session_state.bd_pneus['STATUS'] == 'Em Limpeza'])
+aguard_pro = len(st.session_state.bd_pneus[st.session_state.bd_pneus['STATUS'] == 'Aguardando Produção'])
+prod       = len(st.session_state.bd_pneus[st.session_state.bd_pneus['STATUS'] == 'Em Produção'])
+exped      = len(st.session_state.bd_pneus[st.session_state.bd_pneus['STATUS'] == 'Expedido'])
 
 st.sidebar.markdown(
     f"**OS Total:** {total}  \n"
     f"🟡 Aguardando: {aguard}  \n"
     f"🧼 Em Limpeza: {limpeza}  \n"
+    f"🏭 Aguard. Produção: {aguard_pro}  \n"
     f"🔵 Em Produção: {prod}  \n"
     f"🟢 Expedidos: {exped}"
 )

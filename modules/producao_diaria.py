@@ -323,7 +323,7 @@ def _aba_bipe(df: pd.DataFrame):
 
     if id_travado:
         os_trava  = df[df['IDPEDIDOPNEU'].astype(str).str.strip() == str(id_travado).strip()]
-        pendentes = os_trava[os_trava['STATUS'].isin(['Aguardando', 'Em Limpeza'])]
+        pendentes = os_trava[os_trava['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])]
 
         if not os_trava.empty:
             cliente_tr = os_trava['CLIENTE'].iloc[0]
@@ -346,9 +346,9 @@ def _aba_bipe(df: pd.DataFrame):
             # Puxa TODA a coleta do CSV e mostra com situação por pneu
             vis = os_trava.copy()
             vis['Situação'] = vis['STATUS'].map(
-                lambda s: '⏳ Falta bipar' if str(s).strip() in ('Aguardando', 'Em Limpeza') else '✅ Na linha'
+                lambda s: '⏳ Falta bipar' if str(s).strip() in ('Aguardando', 'Em Limpeza', 'Aguardando Produção') else '✅ Na linha'
             )
-            vis['_ord'] = (~vis['STATUS'].isin(['Aguardando', 'Em Limpeza'])).astype(int)  # pendentes no topo
+            vis['_ord'] = (~vis['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])).astype(int)  # pendentes no topo
             vis = vis.sort_values('_ord')
 
             if not pendentes.empty:
@@ -420,7 +420,7 @@ def _aba_bipe(df: pd.DataFrame):
             st.rerun()
 
         status_atual = str(df.at[i, 'STATUS']).strip()
-        if status_atual in ('Aguardando', 'Em Limpeza'):
+        if status_atual in ('Aguardando', 'Em Limpeza', 'Aguardando Produção'):
             st.session_state.bd_pneus.at[i, 'STATUS']      = 'Em Produção'
             st.session_state.bd_pneus.at[i, 'DATA_ENTRADA'] = (
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -431,7 +431,7 @@ def _aba_bipe(df: pd.DataFrame):
             faltam = len(
                 df_up[
                     (df_up['IDPEDIDOPNEU'] == id_do_pneu) &
-                    (df_up['STATUS'].isin(['Aguardando', 'Em Limpeza']))
+                    (df_up['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção']))
                 ]
             )
             if faltam == 0 and id_travado == id_do_pneu:
@@ -554,7 +554,7 @@ def _aba_importar(df_banco: pd.DataFrame):
             os_cliente = _buscar_os(item['idpedido'], item['cliente'], df_banco)
             achou      = (not os_cliente.empty) and ('STATUS' in os_cliente.columns)
             n_total    = len(os_cliente) if achou else 0
-            n_aguard   = len(os_cliente[os_cliente['STATUS'].isin(['Aguardando', 'Em Limpeza'])]) if achou else 0
+            n_aguard   = len(os_cliente[os_cliente['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])]) if achou else 0
 
             if item.get('idpedido'):
                 modo = '🆔 por ID'
@@ -573,7 +573,7 @@ def _aba_importar(df_banco: pd.DataFrame):
             })
 
             if achou and n_aguard > 0:
-                transito_list.append(os_cliente[os_cliente['STATUS'].isin(['Aguardando', 'Em Limpeza'])])
+                transito_list.append(os_cliente[os_cliente['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])])
 
         with st.expander(f"🔍 Conferência de clientes — Linha {linha_id}", expanded=False):
             st.dataframe(pd.DataFrame(linhas_valid), hide_index=True, use_container_width=True)
@@ -723,7 +723,7 @@ def _status_por_itinerario(itin: dict | None, rotei: dict | None, df_banco: pd.D
     """
     hoje = datetime.date.today()
 
-    df_aberto    = df_banco[df_banco['STATUS'].isin(['Aguardando', 'Em Limpeza'])].copy()
+    df_aberto    = df_banco[df_banco['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])].copy()
     total_aberto = len(df_aberto)
     ja_em_linha  = len(df_banco[df_banco['STATUS'] == 'Em Produção'])
     expedidos    = len(df_banco[df_banco['STATUS'] == 'Expedido'])
@@ -974,7 +974,7 @@ def _status_por_plano_ppcp(plano: dict, df_banco: pd.DataFrame):
             if os_cli.empty or 'STATUS' not in os_cli.columns:
                 aguard = prod = exped = 0
             else:
-                aguard = len(os_cli[os_cli['STATUS'].isin(['Aguardando', 'Em Limpeza'])])
+                aguard = len(os_cli[os_cli['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])])
                 prod   = len(os_cli[os_cli['STATUS'] == 'Em Produção'])
                 exped  = len(os_cli[os_cli['STATUS'] == 'Expedido'])
 

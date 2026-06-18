@@ -55,12 +55,13 @@ def tela_relatorios():
     st.markdown("---")
 
     # ── Cards de resumo ──────────────────────────────────────────────────────
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("Aguardando",  len(df_filtrado[df_filtrado['STATUS'] == 'Aguardando']))
-    col2.metric("Em Limpeza",  len(df_filtrado[df_filtrado['STATUS'] == 'Em Limpeza']))
-    col3.metric("Em Produção", len(df_filtrado[df_filtrado['STATUS'] == 'Em Produção']))
-    col4.metric("Expedidos",   len(df_filtrado[df_filtrado['STATUS'] == 'Expedido']))
-    col5.metric("Total",       len(df_filtrado))
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1.metric("Aguardando",        len(df_filtrado[df_filtrado['STATUS'] == 'Aguardando']))
+    col2.metric("Em Limpeza",        len(df_filtrado[df_filtrado['STATUS'] == 'Em Limpeza']))
+    col3.metric("Aguard. Produção",  len(df_filtrado[df_filtrado['STATUS'] == 'Aguardando Produção']))
+    col4.metric("Em Produção",       len(df_filtrado[df_filtrado['STATUS'] == 'Em Produção']))
+    col5.metric("Expedidos",         len(df_filtrado[df_filtrado['STATUS'] == 'Expedido']))
+    col6.metric("Total",             len(df_filtrado))
 
     st.markdown("---")
 
@@ -230,11 +231,12 @@ def _gerar_excel_completo(df: pd.DataFrame) -> bytes:
     """Gera Excel com múltiplas abas."""
     buf = BytesIO()
     abas = {
-        "Geral":        df,
-        "Em Limpeza":   df[df['STATUS'] == 'Em Limpeza'],
-        "Em Producao":  df[df['STATUS'] == 'Em Produção'],
-        "Expedidos":    df[df['STATUS'] == 'Expedido'],
-        "Aguardando":   df[df['STATUS'] == 'Aguardando'],
+        "Geral":              df,
+        "Em Limpeza":         df[df['STATUS'] == 'Em Limpeza'],
+        "Aguardando Producao": df[df['STATUS'] == 'Aguardando Produção'],
+        "Em Producao":        df[df['STATUS'] == 'Em Produção'],
+        "Expedidos":          df[df['STATUS'] == 'Expedido'],
+        "Aguardando":         df[df['STATUS'] == 'Aguardando'],
     }
 
     # Aba de Romaneio por cliente

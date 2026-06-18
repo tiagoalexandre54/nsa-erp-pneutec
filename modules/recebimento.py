@@ -11,6 +11,19 @@ _RUAS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 _VAGAS_POR_RUA = 5
 _POSICOES_VALIDAS = {f"{rua}{n}" for rua in _RUAS for n in range(1, _VAGAS_POR_RUA + 1)}
 
+# ── Ruas de pré-produção (pós-limpeza): P1–P8, capacidade 18 pneus cada ──────
+_RUAS_PRODUCAO = [f"P{n}" for n in range(1, 9)]
+_CAP_RUA_PRODUCAO = 18
+
+_NAV_ABAS = [
+    "📦 1. Alocar (Bipe)",
+    "🔄 2. Movimentar",
+    "🗺️ 3. Capacidade",
+    "📋 4. FIFO",
+    "🧼 5. Limpeza (Bipe)",
+    "🏭 6. Rua Pré-Produção (Bipe)",
+]
+
 
 def tela_recebimento():
     st.title("📥 Recebimento e Gestão de Pátio (FIFO)")
@@ -21,24 +34,43 @@ def tela_recebimento():
         st.warning("Nenhuma OS cadastrada no sistema. Importe o CSV pelo Painel PPCP.")
         return
 
-    aba1, aba2, aba3, aba4, aba5 = st.tabs([
-        "📦 1. Alocar (Bipe)",
-        "🔄 2. Movimentar",
-        "🗺️ 3. Capacidade",
-        "📋 4. FIFO",
-        "🧼 5. Limpeza (Bipe)",
-    ])
+    if 'receb_aba_ativa' not in st.session_state:
+        st.session_state.receb_aba_ativa = _NAV_ABAS[0]
 
-    with aba1:
+    # Aplica redirecionamento pendente (ex.: limpeza → rua de pré-produção)
+    # ANTES de instanciar o widget — não dá pra mudar a chave de um widget
+    # já instanciado na mesma execução.
+    if st.session_state.get('receb_redirect'):
+        st.session_state.receb_aba_ativa = st.session_state.pop('receb_redirect')
+
+    aba_sel = st.radio(
+        "Navegação:",
+        _NAV_ABAS,
+        horizontal=True,
+        key='receb_aba_ativa',
+        label_visibility='collapsed',
+    )
+
+    # Mensagem de sucesso da etapa anterior (ex.: limpeza redirecionando p/
+    # rua de pré-produção) — exibida aqui pra aparecer em qualquer aba.
+    if st.session_state.get('msg_limpeza'):
+        st.success(st.session_state.msg_limpeza)
+        st.session_state.msg_limpeza = None
+
+    st.markdown("---")
+
+    if aba_sel == _NAV_ABAS[0]:
         _aba_alocar_pallet(df)
-    with aba2:
+    elif aba_sel == _NAV_ABAS[1]:
         _aba_movimentar_pallet(df)
-    with aba3:
+    elif aba_sel == _NAV_ABAS[2]:
         _aba_mapa_capacidade(df)
-    with aba4:
+    elif aba_sel == _NAV_ABAS[3]:
         _aba_mapa_fifo(df)
-    with aba5:
+    elif aba_sel == _NAV_ABAS[4]:
         _aba_enviar_limpeza(df)
+    elif aba_sel == _NAV_ABAS[5]:
+        _aba_alocar_rua_producao(df)
 
 
 # ── 1. Alocação (Bipe da Posição na Parede + Bipe dos Pneus) ─────────────────
@@ -412,12 +444,12 @@ def _aba_enviar_limpeza(df: pd.DataFrame):
                     f"({clientes}) enviados para a limpeza. "
                     f"Posição **{posicao_bipada}** liberada!"
                 )
+                # Redireciona automaticamente para a alocação na rua de
+                # pré-produção — o operador está no mesmo local físico
+                # (máquina de limpeza) cuidando do que já saiu lavado.
+                st.session_state.receb_redirect = _NAV_ABAS[5]
             st.session_state.limpeza_key += 1
             st.rerun()
-
-    if st.session_state.get('msg_limpeza'):
-        st.success(st.session_state.msg_limpeza)
-        st.session_state.msg_limpeza = None
 
     st.markdown("---")
 
@@ -429,4 +461,117 @@ def _aba_enviar_limpeza(df: pd.DataFrame):
             .rename(columns={'LOCAL_PALLET': 'Posição de Origem'}),
             use_container_width=True,
             hide_index=True,
+        )
+
+
+# ── 6. Alocar em Rua de Pré-Produção (Bipe rua + Bipe OS, capacidade 18) ─────
+def _aba_alocar_rua_producao(df: pd.DataFrame):
+    st.subheader("Alocar em Rua de Pré-Produção (Pós-Limpeza)")
+    st.info(
+        "1️⃣ Bipe o código da rua (P1–P8) onde os pneus já limpos estão sendo "
+        f"colocados. 2️⃣ Bipe os pneus. Capacidade máxima: {_CAP_RUA_PRODUCAO} "
+        "pneus por rua."
+    )
+
+    if 'rua_prod_ativa' not in st.session_state:
+        st.session_state.rua_prod_ativa = ''
+    if 'rua_prod_key' not in st.session_state:
+        st.session_state.rua_prod_key = 0
+    if 'rua_os_key' not in st.session_state:
+        st.session_state.rua_os_key = 0
+
+    rua_bipada = st.text_input(
+        "🏭 Bipe a Rua (P1–P8):",
+        key=f"bipe_rua_{st.session_state.rua_prod_key}",
+        placeholder="Ex: P1, P5, P8...",
+    ).strip().upper()
+
+    if rua_bipada:
+        if rua_bipada not in _RUAS_PRODUCAO:
+            st.error(f"❌ Rua '{rua_bipada}' inválida. Use P1 a P8.")
+        else:
+            st.session_state.rua_prod_ativa = rua_bipada
+        st.session_state.rua_prod_key += 1
+        st.rerun()
+
+    if st.session_state.rua_prod_ativa:
+        rua = st.session_state.rua_prod_ativa
+        ocupacao = len(
+            df[(df['STATUS'] == 'Aguardando Produção') & (df['RUA_PRODUCAO'] == rua)]
+        )
+        cheia = ocupacao >= _CAP_RUA_PRODUCAO
+
+        if cheia:
+            st.error(f"🔴 Rua **{rua}** CHEIA — {ocupacao}/{_CAP_RUA_PRODUCAO} pneus. Escolha outra rua.")
+        else:
+            st.success(f"📍 Rua ativa: **{rua}** — {ocupacao}/{_CAP_RUA_PRODUCAO} pneus")
+
+            os_bipada = st.text_input(
+                "📷 Bipe a OS (NRORDEM):",
+                key=f"bipe_rua_os_{st.session_state.rua_os_key}",
+                placeholder="Aguardando leitor...",
+            ).strip()
+
+            if os_bipada:
+                idx = df.index[df['NRORDEM'] == os_bipada].tolist()
+                if not idx:
+                    st.error("❌ OS não encontrada no sistema.")
+                else:
+                    i = idx[0]
+                    status_atual = str(df.at[i, 'STATUS']).strip()
+                    if status_atual != 'Em Limpeza':
+                        st.error(
+                            f"🛑 A OS {os_bipada} está como **{status_atual}**, não "
+                            f"**'Em Limpeza'**. Só pneus que saíram da limpeza entram na rua."
+                        )
+                    elif ocupacao >= _CAP_RUA_PRODUCAO:
+                        st.error(f"🔴 Rua **{rua}** ficou cheia. Escolha outra rua.")
+                    else:
+                        st.session_state.bd_pneus.at[i, 'STATUS']       = 'Aguardando Produção'
+                        st.session_state.bd_pneus.at[i, 'RUA_PRODUCAO'] = rua
+                        salvar_dados(st.session_state.bd_pneus)
+                        st.session_state.msg_rua_prod = (
+                            f"✅ OS {os_bipada} alocada na rua **{rua}** "
+                            f"({ocupacao + 1}/{_CAP_RUA_PRODUCAO})."
+                        )
+                        st.session_state.rua_os_key += 1
+                        st.rerun()
+
+            if st.button("🔄 Trocar de rua"):
+                st.session_state.rua_prod_ativa = ''
+                st.rerun()
+
+    if st.session_state.get('msg_rua_prod'):
+        st.success(st.session_state.msg_rua_prod)
+        st.session_state.msg_rua_prod = None
+
+    st.markdown("---")
+    st.markdown("**Ocupação das Ruas de Pré-Produção**")
+
+    cols = st.columns(4)
+    for n, rua in enumerate(_RUAS_PRODUCAO):
+        ocupacao_rua = len(
+            df[(df['STATUS'] == 'Aguardando Produção') & (df['RUA_PRODUCAO'] == rua)]
+        )
+        if ocupacao_rua >= _CAP_RUA_PRODUCAO:
+            cor_borda, cor_header, label = "#e74c3c", "#c0392b", "🔴 CHEIA"
+        elif ocupacao_rua >= _CAP_RUA_PRODUCAO * 0.7:
+            cor_borda, cor_header, label = "#f39c12", "#d68910", "🟡 ATENÇÃO"
+        else:
+            cor_borda, cor_header, label = "#27ae60", "#1e8449", "🟢 OK"
+
+        cols[n % 4].markdown(
+            f"""
+            <div style="border:2px solid {cor_borda};border-radius:8px;
+                        margin-bottom:12px;overflow:hidden;">
+              <div style="background:{cor_header};padding:6px 8px;">
+                <span style="color:#fff;font-size:13px;font-weight:bold;">🏭 {rua}</span>
+                <div style="color:#fff;font-size:10px;">{label}</div>
+              </div>
+              <div style="padding:6px 8px;background:#1a1a2e;">
+                <div style="font-size:13px;color:#fff;">{ocupacao_rua}/{_CAP_RUA_PRODUCAO} pneus</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )

@@ -537,7 +537,7 @@ def _aba_gerar_plano():
                 situacao = '❌ Sem OS no banco'
                 pct      = 0
             else:
-                aguard = len(os_cli[os_cli['STATUS'].isin(['Aguardando', 'Em Limpeza'])])
+                aguard = len(os_cli[os_cli['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])])
                 prod   = len(os_cli[os_cli['STATUS'] == 'Em Produção'])
                 exped  = len(os_cli[os_cli['STATUS'] == 'Expedido'])
                 total  = aguard + prod + exped
@@ -632,7 +632,7 @@ def _exibir_esporadicos(rotei: dict, df_banco: pd.DataFrame, data_sel: datetime.
             for item in dias.get(dia_k, []):
                 os_cli = _buscar_cli_banco(item['cliente'], df_banco)
                 total  = len(os_cli) if not os_cli.empty else 0
-                aguard = len(os_cli[os_cli['STATUS'].isin(['Aguardando', 'Em Limpeza'])]) if total else 0
+                aguard = len(os_cli[os_cli['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])]) if total else 0
                 espo.append({
                     'Motorista': mot,
                     'Cliente':   item['cliente'],
@@ -804,7 +804,7 @@ def _aba_painel():
     for i, p in enumerate(paradas):
         cli    = p['cliente']
         os_cli = _buscar_cli_banco(cli, df)
-        aguard = len(os_cli[os_cli['STATUS'].isin(['Aguardando', 'Em Limpeza'])])  if not os_cli.empty else 0
+        aguard = len(os_cli[os_cli['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])])  if not os_cli.empty else 0
         prod   = len(os_cli[os_cli['STATUS'] == 'Em Produção'])  if not os_cli.empty else 0
         exped  = len(os_cli[os_cli['STATUS'] == 'Expedido'])     if not os_cli.empty else 0
         total  = aguard + prod + exped
@@ -851,7 +851,7 @@ def _aba_painel():
         mot  = p.get('motorista', '') or ''
 
         os_cli = _buscar_cli_banco(cli, df)
-        aguard = os_cli[os_cli['STATUS'].isin(['Aguardando', 'Em Limpeza'])]  if not os_cli.empty else pd.DataFrame()
+        aguard = os_cli[os_cli['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])]  if not os_cli.empty else pd.DataFrame()
         prod   = os_cli[os_cli['STATUS'] == 'Em Produção']       if not os_cli.empty else pd.DataFrame()
         exped  = os_cli[os_cli['STATUS'] == 'Expedido']          if not os_cli.empty else pd.DataFrame()
         total  = len(os_cli)

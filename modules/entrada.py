@@ -74,7 +74,7 @@ def _processar_bipe(os_bipada: str):
     i = idx[0]
     status_atual = str(df.at[i, 'STATUS']).strip()
 
-    if status_atual in ('Aguardando', 'Em Limpeza'):
+    if status_atual in ('Aguardando', 'Em Limpeza', 'Aguardando Produção'):
         df.at[i, 'STATUS']       = 'Em Produção'
         df.at[i, 'DATA_ENTRADA'] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         salvar_dados(df)
@@ -112,7 +112,7 @@ def _lista_recebidos_do_dia(data_sel: datetime.date):
     # Pneus alocados no pátio (têm pallet) que já saíram da limpeza (ou ainda
     # estão Aguardando, para quem pula a etapa de limpeza) e aguardam entrada
     base = df[
-        (df['STATUS'].isin(['Aguardando', 'Em Limpeza'])) &
+        (df['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção'])) &
         (df['LOCAL_PALLET'].astype(str).str.strip() != '')
     ].copy()
 
@@ -144,7 +144,13 @@ def _lista_recebidos_do_dia(data_sel: datetime.date):
         unsafe_allow_html=True
     )
 
-    for pallet, grupo in do_dia.groupby('LOCAL_PALLET'):
+    # Mostra a rua de pré-produção (pós-limpeza) quando já alocado lá;
+    # senão a posição original do pátio.
+    do_dia['_local_atual'] = do_dia['RUA_PRODUCAO'].where(
+        do_dia['RUA_PRODUCAO'].astype(str).str.strip() != '', do_dia['LOCAL_PALLET']
+    )
+
+    for pallet, grupo in do_dia.groupby('_local_atual'):
         with st.expander(f"📦 Posição {pallet} — {len(grupo)} pneu(s)", expanded=True):
             st.dataframe(
                 grupo[['NRORDEM', 'CLIENTE', 'DESENHO', 'NRSERIE', 'IDPEDIDOPNEU']]

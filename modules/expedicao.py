@@ -24,7 +24,7 @@ def tela_expedicao():
     st.subheader("1. Selecione o cliente que está sendo carregado:")
     cliente_selecionado = st.selectbox("Cliente Destino:", clientes_disponiveis)
 
-    prontos   = df[(df['CLIENTE'] == cliente_selecionado) & (df['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Em Produção']))]
+    prontos   = df[(df['CLIENTE'] == cliente_selecionado) & (df['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção', 'Em Produção']))]
     expedidos = df[(df['CLIENTE'] == cliente_selecionado) & (df['STATUS'] == 'Expedido')]
     total_cli = df[df['CLIENTE'] == cliente_selecionado]
 
@@ -78,10 +78,10 @@ def tela_expedicao():
                     f"Entrada / Linha de Produção) antes de expedir.**"
                 )
 
-            elif status_atual == 'Em Limpeza':
+            elif status_atual in ('Em Limpeza', 'Aguardando Produção'):
                 st.error(
                     f"🛑 **ERRO DE PROCESSO!** A OS **{os_expedicao}** ainda está "
-                    f"**'Em Limpeza'** — ainda não entrou na linha de produção. "
+                    f"como **'{status_atual}'** — ainda não entrou na linha de produção. "
                     f"**Registre a entrada (aba Entrada / Linha de Produção) "
                     f"antes de expedir.**"
                 )
@@ -151,7 +151,7 @@ def _painel_prontos_expedir(cliente: str):
     df = st.session_state.bd_pneus
     prontos = df[
         (df['CLIENTE'] == cliente) &
-        (df['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Em Produção']))
+        (df['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção', 'Em Produção']))
     ].copy()
 
     if prontos.empty:
@@ -193,8 +193,9 @@ def _painel_prontos_expedir(cliente: str):
 
 def _colorir_status_expedicao(row: pd.Series):
     cores = {
-        'Aguardando':  'background-color: #fff3cd; color: #856404',
-        'Em Limpeza':  'background-color: #e8eaf6; color: #1a237e',
-        'Em Produção': 'background-color: #cce5ff; color: #004085',
+        'Aguardando':          'background-color: #fff3cd; color: #856404',
+        'Em Limpeza':          'background-color: #e8eaf6; color: #1a237e',
+        'Aguardando Produção': 'background-color: #fde8d8; color: #8a4b08',
+        'Em Produção':         'background-color: #cce5ff; color: #004085',
     }
     return [cores.get(str(row.get('STATUS', '')).strip(), '')] * len(row)

@@ -13,12 +13,13 @@ def tela_painel_pcp():
     df: pd.DataFrame = st.session_state.bd_pneus
 
     # ── Indicadores rápidos ──────────────────────────────────────────────────
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     col1.metric("Aguardando Entrada", len(df[df['STATUS'] == 'Aguardando']))
     col2.metric("Em Limpeza",         len(df[df['STATUS'] == 'Em Limpeza']))
-    col3.metric("Em Produção",        len(df[df['STATUS'] == 'Em Produção']))
-    col4.metric("Expedidos",          len(df[df['STATUS'] == 'Expedido']))
-    col5.metric("Total de OS",        len(df))
+    col3.metric("Aguard. Produção",   len(df[df['STATUS'] == 'Aguardando Produção']))
+    col4.metric("Em Produção",        len(df[df['STATUS'] == 'Em Produção']))
+    col5.metric("Expedidos",          len(df[df['STATUS'] == 'Expedido']))
+    col6.metric("Total de OS",        len(df))
 
     st.markdown("---")
 
@@ -118,11 +119,12 @@ def tela_painel_pcp():
                         status_banco = ex['STATUS']
                         pallet_banco = str(ex['LOCAL_PALLET']).strip()
 
-                        if status_banco in ['Em Limpeza', 'Em Produção', 'Expedido']:
+                        if status_banco in ['Em Limpeza', 'Aguardando Produção', 'Em Produção', 'Expedido']:
                             df_novo.at[i, 'STATUS']       = status_banco
                             df_novo.at[i, 'DATA_ENTRADA'] = ex['DATA_ENTRADA']
                             df_novo.at[i, 'DATA_SAIDA']   = ex['DATA_SAIDA']
                             df_novo.at[i, 'LOCAL_PALLET'] = ex['LOCAL_PALLET']
+                            df_novo.at[i, 'RUA_PRODUCAO'] = ex['RUA_PRODUCAO']
                             protegidos += 1
                         elif pallet_banco:
                             # Aguardando, mas já recebido no pátio: mantém a
@@ -390,10 +392,11 @@ def _bloco_zerar():
 def _colorir_status(row: pd.Series):
     """Aplica cor de fundo conforme o STATUS de cada linha."""
     cores = {
-        'Aguardando':  'background-color: #fff3cd; color: #856404',
-        'Em Limpeza':  'background-color: #e8eaf6; color: #1a237e',
-        'Em Produção': 'background-color: #cce5ff; color: #004085',
-        'Expedido':    'background-color: #d4edda; color: #155724',
+        'Aguardando':          'background-color: #fff3cd; color: #856404',
+        'Em Limpeza':          'background-color: #e8eaf6; color: #1a237e',
+        'Aguardando Produção': 'background-color: #fde8d8; color: #8a4b08',
+        'Em Produção':         'background-color: #cce5ff; color: #004085',
+        'Expedido':            'background-color: #d4edda; color: #155724',
     }
     status = str(row.get('STATUS', '')).strip()
     return [cores.get(status, '')] * len(row)
