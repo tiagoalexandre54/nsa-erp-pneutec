@@ -70,7 +70,10 @@ def _ler_csv_github() -> pd.DataFrame:
 
 
 def _salvar_csv_github(df: pd.DataFrame) -> None:
-    """Salva o CSV no repositório GitHub (cria ou atualiza)."""
+    """
+    Salva o CSV no repositório GitHub (cria ou atualiza).
+    Lança exceção se a escrita falhar — quem chama precisa saber.
+    """
     import requests, base64, io
     token, repo, branch, csv_path = _github_cfg()
     url = f"https://api.github.com/repos/{repo}/contents/{csv_path}"
@@ -93,7 +96,8 @@ def _salvar_csv_github(df: pd.DataFrame) -> None:
     if sha:
         payload["sha"] = sha
 
-    requests.put(url, json=payload, headers=headers, timeout=15)
+    resp = requests.put(url, json=payload, headers=headers, timeout=15)
+    resp.raise_for_status()
 
 COLUNAS = ['NRORDEM', 'IDPEDIDOPNEU', 'CLIENTE', 'NRSERIE', 'DESENHO', 'STATUS', 'DATA_ENTRADA', 'DATA_SAIDA', 'LOCAL_PALLET', 'RUA_PRODUCAO']
 
@@ -233,26 +237,80 @@ def carregar_dados() -> pd.DataFrame:
     return df[COLUNAS]
 
 
-def salvar_dados(df: pd.DataFrame) -> None:
+def salvar_dados(df: pd.DataFrame) -> bool:
     """
     Salva no GitHub (banco único) quando token disponível.
-    Também salva CSV local como backup offline.
+    Também salva CSV local como backup offline (efêmero no Streamlit Cloud —
+    não sobrevive a reboot, por isso NÃO conta como persistência durável).
+
+    Retorna True só se o dado realmente persistiu de forma durável:
+    - modo GitHub: True somente se a escrita no GitHub teve sucesso
+    - modo local (sem token configurado): True se salvou o CSV local
     """
-    # Sempre salva backup local
+    # Sempre salva backup local (best-effort, não decide o retorno em modo GitHub)
+    local_ok = False
     try:
         CAMINHO_CSV.parent.mkdir(parents=True, exist_ok=True)
         tmp = CAMINHO_CSV.with_suffix('.tmp')
         df.to_csv(tmp, index=False)
         tmp.replace(CAMINHO_CSV)
+        local_ok = True
     except Exception:
         pass
 
-    # Sincroniza com GitHub (banco principal)
+    # Sincroniza com GitHub (banco principal — única fonte durável na nuvem)
     if _modo_github():
         try:
             _salvar_csv_github(df)
+            return True
         except Exception:
-            pass  # sem internet → dado já está no backup local
+            return False  # falhou de verdade — quem chamou precisa saber
+
+    return local_ok
+
+
+def atualizar_e_salvar(filtro, campos: dict) -> tuple[bool, pd.DataFrame, int]:
+    """
+    Atualiza linhas do banco de forma ATÔMICA, evitando que dois operadores
+    bipando ao mesmo tempo (recebimento, limpeza, linha, expedição) apaguem
+    a mudança um do outro.
+
+    Em vez de sobrescrever o banco inteiro com a cópia que está na memória
+    do navegador (que pode estar desatualizada), este fluxo:
+      1. Busca a versão MAIS RECENTE do banco (GitHub/local) na hora do bipe
+      2. Aplica 'filtro' (função df -> máscara booleana) sobre essa versão
+         fresca para achar as linhas certas
+      3. Define os campos em 'campos' só nessas linhas
+      4. Salva e retorna o dataframe atualizado
+
+    Args:
+        filtro: função que recebe o DataFrame fresco e retorna uma Series
+                booleana (ex: lambda df: df['NRORDEM'] == '123')
+        campos: dict {nome_coluna: valor} a aplicar nas linhas filtradas
+
+    Returns:
+        (sucesso, df_atualizado, qtd_linhas_afetadas)
+        - sucesso=False  → falha real ao salvar (chamador deve avisar o usuário
+          e NÃO considerar a ação como concluída)
+        - qtd_linhas_afetadas=0 → filtro não encontrou nada (ex: OS já mudou
+          de estado por outra pessoa entre o bipe e o salvamento)
+
+        Chame `st.session_state.bd_pneus = df_atualizado` quando sucesso=True,
+        mesmo se qtd_linhas_afetadas for 0, para refletir a verdade mais
+        recente do banco na sessão.
+    """
+    df_fresh = carregar_dados()
+    mask = filtro(df_fresh)
+    qtd = int(mask.sum())
+
+    if qtd == 0:
+        return True, df_fresh, 0
+
+    for campo, valor in campos.items():
+        df_fresh.loc[mask, campo] = valor
+
+    sucesso = salvar_dados(df_fresh)
+    return sucesso, df_fresh, qtd
 
 
 # ── Trava Global de IDPEDIDO (Poka-Yoke) ────────────────────────────────────
@@ -319,15 +377,19 @@ def set_trava_global(id_pedido: str | None) -> None:
 def excluir_os(nrordem: str) -> tuple[bool, str]:
     """
     Remove uma OS do banco de dados pelo NRORDEM.
+    Busca a versão mais recente antes de excluir (evita reverter mudanças
+    de outro operador) e confirma que o salvamento realmente persistiu.
     Retorna (sucesso, mensagem).
     """
     import streamlit as st
-    df = st.session_state.bd_pneus
-    idx = df.index[df['NRORDEM'] == nrordem.strip()].tolist()
+    df_fresh = carregar_dados()
+    idx = df_fresh.index[df_fresh['NRORDEM'] == nrordem.strip()].tolist()
     if not idx:
         return False, f"OS {nrordem} não encontrada."
-    st.session_state.bd_pneus = df.drop(index=idx).reset_index(drop=True)
-    salvar_dados(st.session_state.bd_pneus)
+    df_novo = df_fresh.drop(index=idx).reset_index(drop=True)
+    if not salvar_dados(df_novo):
+        return False, f"⚠️ Falha ao salvar — verifique a conexão e tente novamente. OS {nrordem} NÃO foi excluída."
+    st.session_state.bd_pneus = df_novo
     return True, f"OS {nrordem} excluída com sucesso."
 
 

@@ -90,13 +90,16 @@ def tela_painel_pcp():
 
                     if not novos.empty:
                         if st.button(f"✅ Confirmar importação de {len(novos)} OS", key="confirmar_csv"):
-                            st.session_state.bd_pneus = pd.concat(
+                            df_concat = pd.concat(
                                 [st.session_state.bd_pneus, novos], ignore_index=True
                             )
-                            salvar_dados(st.session_state.bd_pneus)
-                            st.session_state.ultimo_arquivo_importado = arquivo_id
-                            st.success(f"✅ {len(novos)} OS importada(s) com sucesso!")
-                            st.rerun()
+                            if not salvar_dados(df_concat):
+                                st.error("⚠️ Falha ao salvar — verifique a conexão e tente importar novamente.")
+                            else:
+                                st.session_state.bd_pneus = df_concat
+                                st.session_state.ultimo_arquivo_importado = arquivo_id
+                                st.success(f"✅ {len(novos)} OS importada(s) com sucesso!")
+                                st.rerun()
                     else:
                         st.session_state.ultimo_arquivo_importado = arquivo_id
                         st.info("Todas as OS deste arquivo já estão no sistema.")
@@ -150,14 +153,17 @@ def tela_painel_pcp():
                         key="confirmar_substituir",
                         type="primary",
                     ):
-                        st.session_state.bd_pneus = df_novo.reset_index(drop=True)
-                        salvar_dados(st.session_state.bd_pneus)
-                        st.session_state.ultimo_arquivo_importado = arquivo_id
-                        st.success(
-                            f"✅ Banco substituído! {len(df_novo)} OS carregadas. "
-                            f"{protegidos} com status preservado, {patio_mantidos} com pallet mantido."
-                        )
-                        st.rerun()
+                        df_substituido = df_novo.reset_index(drop=True)
+                        if not salvar_dados(df_substituido):
+                            st.error("⚠️ Falha ao salvar — verifique a conexão e tente novamente. Banco NÃO foi substituído.")
+                        else:
+                            st.session_state.bd_pneus = df_substituido
+                            st.session_state.ultimo_arquivo_importado = arquivo_id
+                            st.success(
+                                f"✅ Banco substituído! {len(df_novo)} OS carregadas. "
+                                f"{protegidos} com status preservado, {patio_mantidos} com pallet mantido."
+                            )
+                            st.rerun()
 
             except ValueError as e:
                 st.error(f"⚠️ Erro na estrutura do CSV:\n\n{e}")
@@ -277,15 +283,17 @@ def tela_painel_pcp():
                                     ignore_index=True
                                 )
 
-                            st.session_state.bd_pneus = df_base
-                            salvar_dados(df_base)
-                            st.session_state.ultimo_pdf_importado = pdf_id
-                            st.success(
-                                f"✅ {len(atualizados)} OS marcada(s) como Aguardando + "
-                                f"{len(novos_lista)} nova(s) inserida(s). "
-                                f"Acesse a tela 🏭 Entrada para bipar!"
-                            )
-                            st.rerun()
+                            if not salvar_dados(df_base):
+                                st.error("⚠️ Falha ao salvar — verifique a conexão e tente importar novamente.")
+                            else:
+                                st.session_state.bd_pneus = df_base
+                                st.session_state.ultimo_pdf_importado = pdf_id
+                                st.success(
+                                    f"✅ {len(atualizados)} OS marcada(s) como Aguardando + "
+                                    f"{len(novos_lista)} nova(s) inserida(s). "
+                                    f"Acesse a tela 🏭 Entrada para bipar!"
+                                )
+                                st.rerun()
 
                 except ValueError as e:
                     st.error(f"⚠️ Erro ao ler o PDF:\n\n{e}")
@@ -302,8 +310,10 @@ def tela_painel_pcp():
 
     # ── Salvar manual ────────────────────────────────────────────────────────
     if st.button("💾 Salvar dados agora"):
-        salvar_dados(st.session_state.bd_pneus)
-        st.success("✅ Dados salvos em data/ordens.csv")
+        if salvar_dados(st.session_state.bd_pneus):
+            st.success("✅ Dados salvos.")
+        else:
+            st.error("⚠️ Falha ao salvar — verifique a conexão e tente novamente.")
 
 
 def _bloco_exclusao():
@@ -378,15 +388,18 @@ def _bloco_zerar():
     if conf1 and conf2:
         if st.button("🔴 ZERAR TUDO AGORA", type="primary", key="btn_zerar"):
             # Substitui por DataFrame vazio com as colunas corretas
-            st.session_state.bd_pneus = pd.DataFrame(columns=COLUNAS)
-            _salvar(st.session_state.bd_pneus)
-            # Limpa todos os flags de importação para permitir reimportar os mesmos arquivos
-            for k in ["ultimo_arquivo_importado", "ultimo_pdf_importado",
-                      "zerar_check1", "zerar_check2"]:
-                if k in st.session_state:
-                    del st.session_state[k]
-            st.success("✅ Sistema zerado com sucesso. Todas as OS foram removidas.")
-            st.rerun()
+            df_vazio = pd.DataFrame(columns=COLUNAS)
+            if not _salvar(df_vazio):
+                st.error("⚠️ Falha ao salvar — verifique a conexão e tente novamente. Sistema NÃO foi zerado.")
+            else:
+                st.session_state.bd_pneus = df_vazio
+                # Limpa todos os flags de importação para permitir reimportar os mesmos arquivos
+                for k in ["ultimo_arquivo_importado", "ultimo_pdf_importado",
+                          "zerar_check1", "zerar_check2"]:
+                    if k in st.session_state:
+                        del st.session_state[k]
+                st.success("✅ Sistema zerado com sucesso. Todas as OS foram removidas.")
+                st.rerun()
 
 
 def _colorir_status(row: pd.Series):

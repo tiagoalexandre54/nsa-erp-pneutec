@@ -6,7 +6,7 @@ numa data específica, que ainda aguardam entrada na linha de produção.
 import streamlit as st
 import pandas as pd
 import datetime
-from modules.database import salvar_dados
+from modules.database import atualizar_e_salvar
 
 
 def _parse_data(serie: pd.Series) -> pd.Series:
@@ -75,15 +75,29 @@ def _processar_bipe(os_bipada: str):
     status_atual = str(df.at[i, 'STATUS']).strip()
 
     if status_atual in ('Aguardando', 'Em Limpeza', 'Aguardando Produção'):
-        df.at[i, 'STATUS']       = 'Em Produção'
-        df.at[i, 'DATA_ENTRADA'] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        salvar_dados(df)
+        agora = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        sucesso, df_novo, qtd = atualizar_e_salvar(
+            lambda d, _os=os_bipada: (
+                (d['NRORDEM'] == _os) &
+                (d['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção']))
+            ),
+            {'STATUS': 'Em Produção', 'DATA_ENTRADA': agora},
+        )
+        if not sucesso:
+            st.error("⚠️ Falha ao salvar — verifique a conexão e bipe novamente.")
+            return
+        st.session_state.bd_pneus = df_novo
+        if qtd == 0:
+            st.warning(f"⚠️ A OS {os_bipada} já mudou de status (outro operador deve ter bipado antes).")
+            st.rerun()
+            return
+        row_novo = df_novo[df_novo['NRORDEM'] == os_bipada].iloc[0]
         st.session_state.msg_entrada = {
             'tipo': 'sucesso',
             'texto': (
                 f"✅ **SUCESSO!** OS **{os_bipada}** — "
-                f"**{df.at[i, 'CLIENTE']}** | "
-                f"**{df.at[i, 'DESENHO']}** entrou na linha de produção!"
+                f"**{row_novo['CLIENTE']}** | "
+                f"**{row_novo['DESENHO']}** entrou na linha de produção!"
             )
         }
         st.session_state.entrada_key += 1

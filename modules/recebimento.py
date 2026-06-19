@@ -4,7 +4,7 @@ Tela de Recebimento, Alocação de Pallets e Gestão FIFO.
 import streamlit as st
 import pandas as pd
 import datetime
-from modules.database import salvar_dados
+from modules.database import salvar_dados, atualizar_e_salvar, carregar_dados
 
 # ── Mapa físico do pátio: Rua (A–K, 11 colunas) x Vaga (1–5) ─────────────────
 # 11 colunas x 5 pallets x 8 pneus/pallet = 440 pneus paletizados de capacidade.
@@ -141,13 +141,19 @@ def _aba_alocar_pallet(df: pd.DataFrame):
                         st.warning(f"⚠️ A OS {os_bipada} já está na posição **{pos}**.")
                     else:
                         agora = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                        st.session_state.bd_pneus.at[i, 'LOCAL_PALLET']  = pos
-                        # Carimba a data de CHEGADA/recebimento no pátio
-                        st.session_state.bd_pneus.at[i, 'DATA_ENTRADA'] = agora
-                        salvar_dados(st.session_state.bd_pneus)
-                        st.session_state.msg_receb = f"✅ OS {os_bipada} guardada na posição **{pos}**!"
-                        st.session_state.recebimento_key += 1
-                        st.rerun()
+                        sucesso, df_novo, qtd = atualizar_e_salvar(
+                            lambda d, _os=os_bipada: d['NRORDEM'] == _os,
+                            {'LOCAL_PALLET': pos, 'DATA_ENTRADA': agora},
+                        )
+                        if not sucesso:
+                            st.error("⚠️ Falha ao salvar — verifique a conexão e bipe novamente.")
+                        elif qtd == 0:
+                            st.error(f"❌ OS {os_bipada} não encontrada (pode ter sido removida).")
+                        else:
+                            st.session_state.bd_pneus = df_novo
+                            st.session_state.msg_receb = f"✅ OS {os_bipada} guardada na posição **{pos}**!"
+                            st.session_state.recebimento_key += 1
+                            st.rerun()
                 else:
                     st.error("❌ OS não encontrada no sistema.")
 
@@ -218,10 +224,20 @@ def _aba_movimentar_pallet(df: pd.DataFrame):
             elif pallet_origem == pallet_destino:
                 st.warning("A origem e o destino são iguais.")
             else:
-                st.session_state.bd_pneus.loc[pneus_origem.index, 'LOCAL_PALLET'] = pallet_destino
-                salvar_dados(st.session_state.bd_pneus)
-                st.success(f"✅ Todos os pneus de **{pallet_origem}** movidos para **{pallet_destino}**!")
-                st.rerun()
+                sucesso, df_novo, qtd = atualizar_e_salvar(
+                    lambda d, _o=pallet_origem: (d['STATUS'] == 'Aguardando') & (d['LOCAL_PALLET'] == _o),
+                    {'LOCAL_PALLET': pallet_destino},
+                )
+                if not sucesso:
+                    st.error("⚠️ Falha ao salvar — verifique a conexão e tente novamente.")
+                elif qtd == 0:
+                    st.warning(f"⚠️ A posição **{pallet_origem}** já estava vazia (outro operador deve ter movido).")
+                    st.session_state.bd_pneus = df_novo
+                    st.rerun()
+                else:
+                    st.session_state.bd_pneus = df_novo
+                    st.success(f"✅ {qtd} pneu(s) de **{pallet_origem}** movidos para **{pallet_destino}**!")
+                    st.rerun()
     else:
         os_selecionadas = st.multiselect(
             "Selecione as OS que serão movidas:",
@@ -238,11 +254,22 @@ def _aba_movimentar_pallet(df: pd.DataFrame):
             elif not os_selecionadas:
                 st.warning("Selecione pelo menos um pneu para mover.")
             else:
-                idx_mover = df[df['NRORDEM'].isin(os_selecionadas)].index
-                st.session_state.bd_pneus.loc[idx_mover, 'LOCAL_PALLET'] = pallet_destino
-                salvar_dados(st.session_state.bd_pneus)
-                st.success(f"✅ {len(os_selecionadas)} pneu(s) movidos para **{pallet_destino}**!")
-                st.rerun()
+                sucesso, df_novo, qtd = atualizar_e_salvar(
+                    lambda d, _sel=os_selecionadas: d['NRORDEM'].isin(_sel) & (d['STATUS'] == 'Aguardando'),
+                    {'LOCAL_PALLET': pallet_destino},
+                )
+                if not sucesso:
+                    st.error("⚠️ Falha ao salvar — verifique a conexão e tente novamente.")
+                else:
+                    st.session_state.bd_pneus = df_novo
+                    if qtd < len(os_selecionadas):
+                        st.warning(
+                            f"⚠️ Só {qtd} de {len(os_selecionadas)} pneu(s) foram movidos "
+                            f"(os demais já tinham mudado de status)."
+                        )
+                    else:
+                        st.success(f"✅ {qtd} pneu(s) movidos para **{pallet_destino}**!")
+                    st.rerun()
 
 
 # ── 3. Mapa de Capacidade (Grade física: Rua x Vaga) ──────────────────────────
@@ -430,16 +457,23 @@ def _aba_enviar_limpeza(df: pd.DataFrame):
                 f"Use Rua A–K + Vaga 1–{_VAGAS_POR_RUA} (ex: C4)."
             )
         else:
-            pneus_pos = df[
-                (df['STATUS'] == 'Aguardando') & (df['LOCAL_PALLET'] == posicao_bipada)
-            ]
-            if pneus_pos.empty:
+            sucesso, df_novo, qtd = atualizar_e_salvar(
+                lambda d, _p=posicao_bipada: (d['STATUS'] == 'Aguardando') & (d['LOCAL_PALLET'] == _p),
+                {'STATUS': 'Em Limpeza'},
+            )
+            if not sucesso:
+                st.error("⚠️ Falha ao salvar — verifique a conexão e bipe novamente.")
+            elif qtd == 0:
                 st.warning(f"⚠️ A posição **{posicao_bipada}** está vazia. Nada para enviar.")
+                st.session_state.bd_pneus = df_novo
             else:
-                qtd = len(pneus_pos)
-                clientes = ', '.join(pneus_pos['CLIENTE'].unique().tolist())
-                st.session_state.bd_pneus.loc[pneus_pos.index, 'STATUS'] = 'Em Limpeza'
-                salvar_dados(st.session_state.bd_pneus)
+                clientes = ', '.join(
+                    df_novo.loc[
+                        (df_novo['STATUS'] == 'Em Limpeza') & (df_novo['LOCAL_PALLET'] == posicao_bipada),
+                        'CLIENTE'
+                    ].unique().tolist()
+                )
+                st.session_state.bd_pneus = df_novo
                 st.session_state.msg_limpeza = (
                     f"🧼 **{qtd} pneu(s)** da posição **{posicao_bipada}** "
                     f"({clientes}) enviados para a limpeza. "
@@ -514,29 +548,45 @@ def _aba_alocar_rua_producao(df: pd.DataFrame):
             ).strip()
 
             if os_bipada:
-                idx = df.index[df['NRORDEM'] == os_bipada].tolist()
+                # Busca dados frescos pra validar status E capacidade na hora
+                # do bipe — evita estourar a capacidade da rua se dois
+                # operadores bipam quase ao mesmo tempo.
+                df_fresh = carregar_dados()
+                idx = df_fresh.index[df_fresh['NRORDEM'] == os_bipada].tolist()
                 if not idx:
                     st.error("❌ OS não encontrada no sistema.")
                 else:
                     i = idx[0]
-                    status_atual = str(df.at[i, 'STATUS']).strip()
+                    status_atual = str(df_fresh.at[i, 'STATUS']).strip()
+                    ocupacao_fresh = len(
+                        df_fresh[
+                            (df_fresh['STATUS'] == 'Aguardando Produção') &
+                            (df_fresh['RUA_PRODUCAO'] == rua)
+                        ]
+                    )
                     if status_atual != 'Em Limpeza':
                         st.error(
                             f"🛑 A OS {os_bipada} está como **{status_atual}**, não "
                             f"**'Em Limpeza'**. Só pneus que saíram da limpeza entram na rua."
                         )
-                    elif ocupacao >= _CAP_RUA_PRODUCAO:
-                        st.error(f"🔴 Rua **{rua}** ficou cheia. Escolha outra rua.")
-                    else:
-                        st.session_state.bd_pneus.at[i, 'STATUS']       = 'Aguardando Produção'
-                        st.session_state.bd_pneus.at[i, 'RUA_PRODUCAO'] = rua
-                        salvar_dados(st.session_state.bd_pneus)
-                        st.session_state.msg_rua_prod = (
-                            f"✅ OS {os_bipada} alocada na rua **{rua}** "
-                            f"({ocupacao + 1}/{_CAP_RUA_PRODUCAO})."
+                    elif ocupacao_fresh >= _CAP_RUA_PRODUCAO:
+                        st.error(
+                            f"🔴 Rua **{rua}** ficou cheia ({ocupacao_fresh}/{_CAP_RUA_PRODUCAO}). "
+                            f"Escolha outra rua."
                         )
-                        st.session_state.rua_os_key += 1
-                        st.rerun()
+                    else:
+                        df_fresh.at[i, 'STATUS']       = 'Aguardando Produção'
+                        df_fresh.at[i, 'RUA_PRODUCAO'] = rua
+                        if not salvar_dados(df_fresh):
+                            st.error("⚠️ Falha ao salvar — verifique a conexão e bipe novamente.")
+                        else:
+                            st.session_state.bd_pneus = df_fresh
+                            st.session_state.msg_rua_prod = (
+                                f"✅ OS {os_bipada} alocada na rua **{rua}** "
+                                f"({ocupacao_fresh + 1}/{_CAP_RUA_PRODUCAO})."
+                            )
+                            st.session_state.rua_os_key += 1
+                            st.rerun()
 
             if st.button("🔄 Trocar de rua"):
                 st.session_state.rua_prod_ativa = ''

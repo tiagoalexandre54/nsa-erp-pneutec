@@ -72,11 +72,12 @@ def _norm_header(h: str) -> str:
 
 # ── GitHub helpers ────────────────────────────────────────────────────────────
 
-def _salvar_github(caminho_rel: str, conteudo: str, msg: str) -> None:
+def _salvar_github(caminho_rel: str, conteudo: str, msg: str) -> bool:
+    """Salva no GitHub. Retorna True só se persistiu de verdade."""
     try:
         from modules.database import _modo_github, _github_cfg
         if not _modo_github():
-            return
+            return True  # modo local sem GitHub configurado — backup local já foi feito
         import requests, base64
         token, repo, branch, _ = _github_cfg()
         url = f"https://api.github.com/repos/{repo}/contents/{caminho_rel}"
@@ -87,9 +88,11 @@ def _salvar_github(caminho_rel: str, conteudo: str, msg: str) -> None:
         payload = {'message': msg, 'content': b64, 'branch': branch}
         if sha:
             payload['sha'] = sha
-        requests.put(url, json=payload, headers=headers, timeout=10)
+        resp = requests.put(url, json=payload, headers=headers, timeout=10)
+        resp.raise_for_status()
+        return True
     except Exception:
-        pass
+        return False
 
 
 def _carregar_github(caminho_rel: str) -> str | None:
@@ -138,7 +141,7 @@ def _itin_valido(it: dict) -> bool:
             and isinstance(it['paradas'], list))
 
 
-def _salvar_itinerario(it: dict) -> None:
+def _salvar_itinerario(it: dict) -> bool:
     it = dict(it)
     it['_schema'] = _SCHEMA_ITIN
     s = json.dumps(it, ensure_ascii=False, indent=2)
@@ -147,7 +150,7 @@ def _salvar_itinerario(it: dict) -> None:
         _ITIN_JSON.write_text(s, encoding='utf-8')
     except Exception:
         pass
-    _salvar_github('data/itinerario.json', s, 'Atualiza itinerario')
+    return _salvar_github('data/itinerario.json', s, 'Atualiza itinerario')
 
 
 def _carregar_itinerario() -> dict | None:
@@ -186,7 +189,7 @@ def _rotei_valido(r: dict) -> bool:
             and isinstance(r['motoristas'], dict))
 
 
-def _salvar_roteirizacao(rotei: dict) -> None:
+def _salvar_roteirizacao(rotei: dict) -> bool:
     rotei = dict(rotei)
     rotei['_schema'] = _SCHEMA_ROTEI
     s = json.dumps(rotei, ensure_ascii=False, indent=2)
@@ -195,7 +198,7 @@ def _salvar_roteirizacao(rotei: dict) -> None:
         _ROTEI_JSON.write_text(s, encoding='utf-8')
     except Exception:
         pass
-    _salvar_github('data/roteirizacao.json', s, 'Atualiza roteirizacao')
+    return _salvar_github('data/roteirizacao.json', s, 'Atualiza roteirizacao')
 
 
 def _carregar_roteirizacao() -> dict | None:
@@ -444,12 +447,15 @@ def _aba_importar_roteirizacao():
 
             if st.button("💾 Salvar Roteirização no Sistema", type="primary"):
                 with st.spinner("Salvando..."):
-                    _salvar_roteirizacao(rotei_nova)
-                st.success(
-                    f"✅ Roteirização salva! {len(motoristas)} motoristas, {tot} entradas. "
-                    f"Use a aba **📅 Gerar Plano do Dia** para gerar o roteiro de qualquer data."
-                )
-                st.rerun()
+                    ok = _salvar_roteirizacao(rotei_nova)
+                if not ok:
+                    st.error("⚠️ Falha ao salvar — verifique a conexão e tente novamente.")
+                else:
+                    st.success(
+                        f"✅ Roteirização salva! {len(motoristas)} motoristas, {tot} entradas. "
+                        f"Use a aba **📅 Gerar Plano do Dia** para gerar o roteiro de qualquer data."
+                    )
+                    st.rerun()
 
         except Exception as e:
             st.error(f"❌ Erro ao ler planilha: {e}")
@@ -616,12 +622,14 @@ def _aba_gerar_plano():
             'veiculo':   '',
             'paradas':   paradas_itin,
         }
-        _salvar_itinerario(it)
-        st.session_state.itin_paradas = list(paradas_itin)
-        st.success(
-            f"✅ Itinerário de {dia_label} salvo com {len(paradas_itin)} paradas! "
-            f"Acesse **📊 Painel do Dia** para acompanhar em tempo real."
-        )
+        if not _salvar_itinerario(it):
+            st.error("⚠️ Falha ao salvar — verifique a conexão e tente novamente.")
+        else:
+            st.session_state.itin_paradas = list(paradas_itin)
+            st.success(
+                f"✅ Itinerário de {dia_label} salvo com {len(paradas_itin)} paradas! "
+                f"Acesse **📊 Painel do Dia** para acompanhar em tempo real."
+            )
 
 
 def _exibir_esporadicos(rotei: dict, df_banco: pd.DataFrame, data_sel: datetime.date):
@@ -757,8 +765,10 @@ def _aba_editar():
             'veiculo':   veiculo.strip(),
             'paradas':   paradas,
         }
-        _salvar_itinerario(it)
-        st.success("✅ Itinerário salvo! O painel do dia e o PPCP já refletem a nova ordem.")
+        if not _salvar_itinerario(it):
+            st.error("⚠️ Falha ao salvar — verifique a conexão e tente novamente.")
+        else:
+            st.success("✅ Itinerário salvo! O painel do dia e o PPCP já refletem a nova ordem.")
 
     if col_l.button("🗑️ Limpar / Novo Roteiro"):
         st.session_state.itin_paradas = []

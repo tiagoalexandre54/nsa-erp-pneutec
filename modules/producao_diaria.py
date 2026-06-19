@@ -310,7 +310,7 @@ def tela_producao_diaria():
 
 # ── 1. Bipe de Produção (Trava Poka-Yoke por IDPEDIDO) ───────────────────────
 def _aba_bipe(df: pd.DataFrame):
-    from modules.database import salvar_dados, ler_trava_global, set_trava_global
+    from modules.database import atualizar_e_salvar, ler_trava_global, set_trava_global
 
     st.subheader("Bipagem de Entrada na Máquina")
 
@@ -421,26 +421,33 @@ def _aba_bipe(df: pd.DataFrame):
 
         status_atual = str(df.at[i, 'STATUS']).strip()
         if status_atual in ('Aguardando', 'Em Limpeza', 'Aguardando Produção'):
-            st.session_state.bd_pneus.at[i, 'STATUS']      = 'Em Produção'
-            st.session_state.bd_pneus.at[i, 'DATA_ENTRADA'] = (
-                datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            agora = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            sucesso, df_novo, qtd = atualizar_e_salvar(
+                lambda d, _c=codigo: (
+                    (d['NRORDEM'] == _c) &
+                    (d['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção']))
+                ),
+                {'STATUS': 'Em Produção', 'DATA_ENTRADA': agora},
             )
-            salvar_dados(st.session_state.bd_pneus)
-
-            df_up  = st.session_state.bd_pneus
-            faltam = len(
-                df_up[
-                    (df_up['IDPEDIDOPNEU'] == id_do_pneu) &
-                    (df_up['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção']))
-                ]
-            )
-            if faltam == 0 and id_travado == id_do_pneu:
-                st.success("✅ ÚLTIMO PNEU! Coleta completa. Clique em 🔓 para liberar.")
+            if not sucesso:
+                st.error("⚠️ Falha ao salvar — verifique a conexão e bipe novamente.")
             else:
-                st.success(f"✅ OS {codigo} registrada! Faltam {faltam} pneus desta coleta.")
-
-            st.session_state.prod_bipe_key += 1
-            st.rerun()
+                st.session_state.bd_pneus = df_novo
+                if qtd == 0:
+                    st.warning(f"⚠️ A OS {codigo} já mudou de status (outro operador deve ter bipado antes).")
+                else:
+                    faltam = len(
+                        df_novo[
+                            (df_novo['IDPEDIDOPNEU'] == id_do_pneu) &
+                            (df_novo['STATUS'].isin(['Aguardando', 'Em Limpeza', 'Aguardando Produção']))
+                        ]
+                    )
+                    if faltam == 0 and id_travado == id_do_pneu:
+                        st.success("✅ ÚLTIMO PNEU! Coleta completa. Clique em 🔓 para liberar.")
+                    else:
+                        st.success(f"✅ OS {codigo} registrada! Faltam {faltam} pneus desta coleta.")
+                st.session_state.prod_bipe_key += 1
+                st.rerun()
         else:
             st.warning(f"⚠️ A OS {codigo} já consta como **{status_atual}**.")
 
@@ -456,16 +463,19 @@ def _aba_bipe(df: pd.DataFrame):
             # Inicia a coleta: TODO pneu deste IDPEDIDO volta a "Aguardando"
             # (exceto os já Expedidos), mesmo que o ERP tenha mandado como
             # "Em Produção" — pois aqui o pneu só entra na linha ao ser BIPADO.
-            bd = st.session_state.bd_pneus
-            mask = (
-                (bd['IDPEDIDOPNEU'].astype(str).str.strip() == codigo) &
-                (bd['STATUS'] != 'Expedido')
+            sucesso, df_novo, qtd = atualizar_e_salvar(
+                lambda d, _c=codigo: (
+                    (d['IDPEDIDOPNEU'].astype(str).str.strip() == _c) & (d['STATUS'] != 'Expedido')
+                ),
+                {'STATUS': 'Aguardando'},
             )
-            bd.loc[mask, 'STATUS'] = 'Aguardando'
-            salvar_dados(bd)
-            set_trava_global(codigo)
-            st.session_state.prod_bipe_key += 1
-            st.rerun()
+            if not sucesso:
+                st.error("⚠️ Falha ao salvar — verifique a conexão e tente novamente.")
+            else:
+                st.session_state.bd_pneus = df_novo
+                set_trava_global(codigo)
+                st.session_state.prod_bipe_key += 1
+                st.rerun()
 
     else:
         st.error("❌ Código não encontrado no banco de dados.")

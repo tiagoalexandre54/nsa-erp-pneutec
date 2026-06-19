@@ -4,7 +4,7 @@ Tela 3 — Expedição e Montagem de Carga.
 import streamlit as st
 import pandas as pd
 import datetime
-from modules.database import salvar_dados
+from modules.database import salvar_dados, carregar_dados
 
 
 def tela_expedicao():
@@ -51,7 +51,9 @@ def tela_expedicao():
 
     if os_expedicao:
         os_expedicao = os_expedicao.strip()
-        df = st.session_state.bd_pneus
+        # Busca dados frescos pra validar (trava de cliente errado + status)
+        # com a verdade mais recente, não uma cópia que pode estar desatualizada.
+        df = carregar_dados()
         idx = df.index[df['NRORDEM'] == os_expedicao].tolist()
 
         if idx:
@@ -97,17 +99,20 @@ def tela_expedicao():
             elif status_atual == 'Em Produção':
                 df.at[i, 'STATUS']     = 'Expedido'
                 df.at[i, 'DATA_SAIDA'] = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                salvar_dados(df)
-                st.session_state.msg_expedicao = {
-                    'tipo': 'sucesso',
-                    'texto': (
-                        f"📦 **LIBERADO!** Pneu **{df.at[i, 'DESENHO']}** "
-                        f"(Série **{df.at[i, 'NRSERIE']}**) adicionado à carga de "
-                        f"**{cliente_selecionado}**."
-                    )
-                }
-                st.session_state.expedicao_key += 1
-                st.rerun()
+                if not salvar_dados(df):
+                    st.error("⚠️ Falha ao salvar — verifique a conexão e bipe novamente. Pneu NÃO foi expedido.")
+                else:
+                    st.session_state.bd_pneus = df
+                    st.session_state.msg_expedicao = {
+                        'tipo': 'sucesso',
+                        'texto': (
+                            f"📦 **LIBERADO!** Pneu **{df.at[i, 'DESENHO']}** "
+                            f"(Série **{df.at[i, 'NRSERIE']}**) adicionado à carga de "
+                            f"**{cliente_selecionado}**."
+                        )
+                    }
+                    st.session_state.expedicao_key += 1
+                    st.rerun()
 
             else:
                 st.warning(
